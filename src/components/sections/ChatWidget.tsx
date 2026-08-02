@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bot, ImagePlus, Mic, Send, Sparkles, X } from 'lucide-react'
 import { EASE } from '../../lib/animations'
+import { geminiChat, hasGeminiKey } from '../../lib/gemini'
 
 const suggested = [
   'My tomato leaves are turning yellow',
@@ -69,24 +70,57 @@ export function ChatWidget() {
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [pending, setPending] = useState<string[]>([])
+  const [live, setLive] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const busyRef = useRef(false)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, typing])
 
   const ask = (q: string) => {
-    if (!q.trim()) return
+    if (!q.trim() || busyRef.current) return
+    busyRef.current = true
     setMessages((m) => [...m, { from: 'user', text: q }])
     setInput('')
     setTyping(true)
-    const reply = replies[q] ?? [
-      'Great question! For personalized answers, take a crop photo in the scanner — I can give you an exact diagnosis and treatment plan.',
-    ]
-    setTimeout(() => {
+
+    const fallback = (reply: string[]) => {
+      setLive(false)
       setTyping(false)
       setPending(reply)
-    }, 700)
+    }
+
+    if (!hasGeminiKey()) {
+      const reply = replies[q] ?? [
+        'Great question! For personalized answers, take a crop photo in the scanner — I can give you an exact diagnosis and treatment plan.',
+      ]
+      setTimeout(() => fallback(reply), 700)
+      busyRef.current = false
+      return
+    }
+
+    setLive(true)
+    const history = messages
+      .filter((m) => m.from === 'user' || m.from === 'bot')
+      .slice(-10)
+      .map((m) => ({ role: (m.from === 'user' ? 'user' : 'model') as 'user' | 'model', text: m.text }))
+      .concat([{ role: 'user' as const, text: q }])
+
+    geminiChat(history)
+      .then((text) => {
+        setTyping(false)
+        setPending(text.split('\n').filter((l) => l.trim()))
+      })
+      .catch(() => {
+        fallback([
+          'Sorry, I could not reach the AI right now. ' +
+            (replies[q] ?? 'You can try again, or take a crop photo in the scanner for an instant diagnosis.'),
+        ])
+      })
+      .finally(() => {
+        busyRef.current = false
+      })
   }
 
   const handleLineDone = () => {
@@ -143,7 +177,9 @@ export function ChatWidget() {
                 <p className="flex items-center gap-1.5 text-sm font-semibold">
                   Sasya AI <Sparkles size={12} className="text-blush-400" />
                 </p>
-                <p className="text-[11px] text-emerald-300">Online · replies instantly</p>
+                <p className="text-[11px] text-emerald-300">
+                  {live ? 'Online · live Gemini AI' : 'Online · replies instantly'}
+                </p>
               </div>
             </div>
 

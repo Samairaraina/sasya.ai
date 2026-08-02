@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+﻿import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Camera,
@@ -13,6 +13,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { SectionHeading, EASE } from '../../lib/animations'
+import { extractJson, geminiVision, hasGeminiKey } from '../../lib/gemini'
 
 const steps = [
   { label: 'Uploading image', dur: 900 },
@@ -28,37 +29,66 @@ const DEMO_LEAF = `data:image/svg+xml,${encodeURIComponent(
 
 type Stage = 'idle' | 'processing' | 'done'
 
-const result = {
+type ScanResult = {
+  disease: string
+  confidence: number
+  severity: string
+  symptoms: string
+  causes: string
+  organic: string
+  chemical: string
+  fertilizer: string
+  recovery: string
+  experts?: { name: string; role: string; rating: number }[]
+}
+
+const result: ScanResult = {
   disease: 'Early Blight (Alternaria solani)',
   confidence: 96.4,
   severity: 'Moderate',
   symptoms: 'Dark brown spots with concentric rings on lower leaves, yellowing around lesions.',
-  causes: 'Fungal spores spread by rain splash, high humidity above 85%, night temperatures 15-20°C.',
+  causes: 'Fungal spores spread by rain splash, high humidity above 85%, night temperatures 15-20Â°C.',
   organic: 'Spray neem oil 3% + baking soda solution weekly. Remove and destroy infected leaves.',
   chemical: 'Mancozeb 75% WP @ 2.5g/L or Chlorothalonil @ 2g/L every 10-14 days.',
   fertilizer: 'Balanced NPK 19:19:19 @ 2kg/acre after treatment. Add micronutrient mix.',
-  recovery: '10–14 days',
+  recovery: '10â€“14 days',
   experts: [
     { name: 'Dr. Meera Sharma', role: 'Plant Pathologist, KVK Pune', rating: 4.9 },
     { name: 'Ramesh Patil', role: 'Senior Agronomist, 22 yrs exp', rating: 4.8 },
   ],
 }
 
+const VISION_PROMPT =
+  'Analyze this crop leaf photo for disease and health. Return ONLY valid JSON (no markdown, no extra text) with exactly these keys: ' +
+  '"disease" (disease or condition name, or "No clear disease detected"), "confidence" (number 0-100), ' +
+  '"severity" ("Low", "Moderate", or "High"), "symptoms", "causes", "organic" (organic treatment), ' +
+  '"chemical" (chemical treatment), "fertilizer" (recommended fertilizer plan), ' +
+  '"recovery" (estimated recovery time in days). Write advice in simple practical language for Indian farmers.'
+
 export function Scanner() {
   const [stage, setStage] = useState<Stage>('idle')
   const [stepIdx, setStepIdx] = useState(0)
   const [preview, setPreview] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [liveResult, setLiveResult] = useState<ScanResult | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const start = useCallback(() => {
+  const start = useCallback((dataUrl?: string) => {
     setStage('processing')
     setStepIdx(0)
     steps.forEach((s, i) => {
       setTimeout(() => setStepIdx(i), s.dur)
     })
-    const total = steps.reduce((a, s) => a + s.dur, 0)
-    setTimeout(() => setStage('done'), total + 400)
+    setLiveResult(null)
+    const analyze = hasGeminiKey() && dataUrl
+      ? geminiVision(dataUrl, VISION_PROMPT)
+          .then((text) => extractJson<ScanResult>(text))
+          .catch(() => null)
+      : Promise.resolve(null)
+    analyze.then((parsed) => {
+      setLiveResult(parsed)
+      setStage('done')
+    })
   }, [])
 
   const onFile = useCallback(
@@ -66,7 +96,9 @@ export function Scanner() {
       if (!file) return
       const url = URL.createObjectURL(file)
       setPreview(url)
-      start()
+      const reader = new FileReader()
+      reader.onload = () => start(String(reader.result))
+      reader.readAsDataURL(file)
     },
     [start],
   )
@@ -80,7 +112,11 @@ export function Scanner() {
     setStage('idle')
     setPreview(null)
     setStepIdx(0)
+    setLiveResult(null)
   }, [])
+
+  const report = liveResult ?? result
+  const experts = (liveResult?.experts ?? result.experts) ?? []
 
   return (
     <section id="solutions" className="relative py-24 lg:py-32">
@@ -263,11 +299,11 @@ export function Scanner() {
                     <div>
                       <p className="font-display text-xl font-bold">Diagnosis complete</p>
                       <p className="mt-1 text-sm text-white/55">
-                        Full treatment report generated for {result.disease.split('(')[0].trim()}.
+                        Full treatment report generated for {report.disease.split('(')[0].trim()}.
                       </p>
                     </div>
                     <button onClick={reset} className="text-sm font-medium text-blush-400 hover:underline">
-                      ← Scan another leaf
+                      â† Scan another leaf
                     </button>
                   </motion.div>
                 )}
@@ -298,14 +334,19 @@ export function Scanner() {
                           AI Report
                         </span>
                         <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-300">
-                          {result.severity} severity
+                          {report.severity} severity
                         </span>
+                        {liveResult && (
+                          <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-white/60">
+                            Gemini live
+                          </span>
+                        )}
                       </div>
-                      <h3 className="mt-4 font-display text-2xl font-bold">{result.disease}</h3>
+                      <h3 className="mt-4 font-display text-2xl font-bold">{report.disease}</h3>
                     </div>
                     <div className="text-right">
                       <p className="stat-font text-4xl font-bold text-emerald-300">
-                        {result.confidence}%
+                        {report.confidence}%
                       </p>
                       <p className="text-xs text-white/50">Confidence</p>
                     </div>
@@ -313,12 +354,12 @@ export function Scanner() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     {[
-                      { t: 'Symptoms', v: result.symptoms },
-                      { t: 'Possible Causes', v: result.causes },
-                      { t: 'Organic Treatment', v: result.organic, accent: true },
-                      { t: 'Chemical Treatment', v: result.chemical, accent: true },
-                      { t: 'Recommended Fertilizer', v: result.fertilizer },
-                      { t: 'Estimated Recovery', v: `${result.recovery} with consistent treatment`, accent: true },
+                      { t: 'Symptoms', v: report.symptoms },
+                      { t: 'Possible Causes', v: report.causes },
+                      { t: 'Organic Treatment', v: report.organic, accent: true },
+                      { t: 'Chemical Treatment', v: report.chemical, accent: true },
+                      { t: 'Recommended Fertilizer', v: report.fertilizer },
+                      { t: 'Estimated Recovery', v: `${report.recovery} with consistent treatment`, accent: true },
                     ].map((b) => (
                       <div
                         key={b.t}
@@ -337,7 +378,7 @@ export function Scanner() {
                       Nearby Experts
                     </p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {result.experts.map((e) => (
+                      {experts.map((e) => (
                         <div key={e.name} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blush-500/40 to-emerald-400/40 font-display text-sm font-bold">
                             {e.name.split(' ').map((w) => w[0]).join('')}
@@ -346,7 +387,7 @@ export function Scanner() {
                             <p className="truncate text-sm font-semibold">{e.name}</p>
                             <p className="truncate text-xs text-white/50">{e.role}</p>
                           </div>
-                          <span className="ml-auto text-xs font-semibold text-butter">★ {e.rating}</span>
+                          <span className="ml-auto text-xs font-semibold text-butter">â˜… {e.rating}</span>
                         </div>
                       ))}
                     </div>
@@ -386,7 +427,7 @@ export function Scanner() {
                   <div>
                     <p className="font-display text-xl font-bold">Your AI report appears here</p>
                     <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/50">
-                      Upload a leaf photo to unlock the full diagnosis — disease, treatments,
+                      Upload a leaf photo to unlock the full diagnosis â€” disease, treatments,
                       fertilizer plan and nearby experts.
                     </p>
                   </div>
