@@ -1,0 +1,13 @@
+{
+  "region": "ap-southeast-1",
+  "app": {
+    "name": "sasya",
+    "framework": "bun",
+    "entry": "src/main.tsx",
+    "httpPort": 3000,
+    "build": {
+      "command": "npm run build",
+      "outputDirectory": "."
+    }
+  }
+}
