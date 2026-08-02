@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Starter models — replace with your own
+model Farm {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  sizeAcres Float?
+  createdAt DateTime @default(now())
+  crops     Crop[]
+}
+
+model Crop {
+  id        String   @id @default(cuid())
+  name      String
+  variety   String?
+  plantedAt DateTime?
+  farmId    String
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
