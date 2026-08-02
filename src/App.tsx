@@ -1,0 +1,93 @@
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
+import Lenis from 'lenis'
+import { Preloader } from './components/layout/Preloader'
+import { Navbar } from './components/layout/Navbar'
+import { Footer } from './components/layout/Footer'
+import { ChatWidget } from './components/sections/ChatWidget'
+import { ScrollToTop } from './components/layout/ScrollToTop'
+import { PageTransition } from './components/layout/PageShell'
+
+const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })))
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage').then((m) => ({ default: m.FeaturesPage })))
+const SolutionsPage = lazy(() => import('./pages/SolutionsPage').then((m) => ({ default: m.SolutionsPage })))
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const PricingPage = lazy(() => import('./pages/PricingPage').then((m) => ({ default: m.PricingPage })))
+const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })))
+const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })))
+const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })))
+
+function AnimatedRoutes() {
+  const location = useLocation()
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+        <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
+        <Route path="/solutions" element={<PageTransition><SolutionsPage /></PageTransition>} />
+        <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+        <Route path="/pricing" element={<PageTransition><PricingPage /></PageTransition>} />
+        <Route path="/resources" element={<PageTransition><ResourcesPage /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+        <Route path="*" element={<PageTransition><HomePage /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
+  )
+}
+
+export default function App() {
+  const [loaded, setLoaded] = useState(false)
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      lerp: 0.09,
+      smoothWheel: true,
+      wheelMultiplier: 1,
+    })
+    function raf(time: number) {
+      lenis.raf(time)
+      requestAnimationFrame(raf)
+    }
+    requestAnimationFrame(raf)
+    return () => lenis.destroy()
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+  }, [dark])
+
+  useEffect(() => {
+    if (!loaded) {
+      document.documentElement.style.overflow = 'hidden'
+      return
+    }
+    document.documentElement.style.overflow = ''
+    window.scrollTo(0, 0)
+  }, [loaded])
+
+  return (
+    <BrowserRouter>
+      <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
+        <div className="noise" />
+        <Preloader onDone={() => setLoaded(true)} />
+        {loaded && (
+          <Suspense fallback={null}>
+            <ScrollToTop />
+            <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
+            <main>
+              <AnimatedRoutes />
+            </main>
+            <Footer />
+            <ChatWidget />
+          </Suspense>
+        )}
+      </div>
+    </BrowserRouter>
+  )
+}
