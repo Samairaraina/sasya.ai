@@ -14,7 +14,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
   })
   if (!res.ok) {
-    let message = `Request failed (${res.status})`
+    let message = `Request failed (${res.status}) for ${path}`
     try {
       const body = await res.json()
       if (body && typeof body.error === 'string') message = body.error
