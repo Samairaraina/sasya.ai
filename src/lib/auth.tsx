@@ -1,5 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
-import { apiGet, apiPost } from './api'
+import type { User } from '@supabase/supabase-js'
+import { supabase } from './supabase'
 
 export type AuthUser = { id: string; email: string; name: string | null }
 
@@ -13,53 +14,86 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function toAuthUser(user: User, profile?: { name: string | null } | null): AuthUser {
+  return {
+    id: user.id,
+    email: user.email ?? '',
+    name: profile?.name ?? user.user_metadata?.name ?? null,
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let cancelled = false
-    apiGet<{ user: AuthUser | null }>('/api/auth/me')
-      .then((data) => {
-        if (!cancelled) setUser(data.user)
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', session.user.id)
+          .single()
+        setUser(toAuthUser(session.user, profile))
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', session.user.id)
+            .single()
+          setUser(toAuthUser(session.user, profile))
+        } else {
+          setUser(null)
+        }
+        setLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function signIn(email: string, password: string) {
-    try {
-      const data = await apiPost<{ user: AuthUser }>('/api/auth/login', { email, password })
-      setUser(data.user)
-      return { error: null }
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Sign in failed.' }
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: error.message }
+    return { error: null }
   }
 
   async function signUp(email: string, password: string, name?: string) {
-    try {
-      const data = await apiPost<{ user: AuthUser }>('/api/auth/register', { email, password, name })
-      setUser(data.user)
-      return { error: null }
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Sign up failed.' }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name: name ?? null },
+      },
+    })
+    if (error) return { error: error.message }
+
+    // Create profile row
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        name: name ?? null,
+        role: 'FARMER',
+        language: 'en',
+      })
     }
+
+    return { error: null }
   }
 
   async function signOut() {
-    try {
-      await apiPost<void>('/api/auth/logout')
-    } catch {
-      // session may already be gone
-    }
+    await supabase.auth.signOut()
     setUser(null)
   }
 

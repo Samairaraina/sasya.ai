@@ -1,0 +1,124 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          phone: string | null
+          role: 'FARMER' | 'EXPERT' | 'ADMIN'
+          language: string
+          location: string | null
+          profile_image: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          name?: string | null
+          phone?: string | null
+          role?: 'FARMER' | 'EXPERT' | 'ADMIN'
+          language?: string
+          location?: string | null
+          profile_image?: string | null
+        }
+        Update: {
+          name?: string | null
+          phone?: string | null
+          role?: 'FARMER' | 'EXPERT' | 'ADMIN'
+          language?: string
+          location?: string | null
+          profile_image?: string | null
+        }
+      }
+      disease_reports: {
+        Row: {
+          id: string
+          user_id: string
+          crop_name: string
+          disease_name: string | null
+          confidence: number | null
+          image: string
+          recommendation: string | null
+          created_at: string
+        }
+      }
+      farms: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          location: string | null
+          size_acres: number | null
+          created_at: string
+        }
+      }
+      weather: {
+        Row: {
+          id: string
+          location: string
+          temperature: number
+          humidity: number
+          rainfall: number | null
+          updated_at: string
+        }
+      }
+      market_prices: {
+        Row: {
+          id: string
+          crop: string
+          market: string
+          state: string
+          price: number
+          updated_at: string
+        }
+      }
+      government_schemes: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          eligibility: string
+          link: string | null
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          message: string
+          is_read: boolean
+          created_at: string
+        }
+      }
+      feedback: {
+        Row: {
+          id: string
+          user_id: string
+          rating: number
+          message: string
+          created_at: string
+        }
+      }
+    }
+  }
+}

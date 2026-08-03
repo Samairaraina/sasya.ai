@@ -1,3 +1,5 @@
+import { supabase } from './supabase'
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -8,9 +10,15 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Attach Supabase JWT if a session exists
+  const { data: { session } } = await supabase.auth.getSession()
+  const authHeader: Record<string, string> = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {}
+
   const res = await fetch(path, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeader, ...(init.headers as Record<string, string> ?? {}) } as HeadersInit,
     ...init,
   })
   if (!res.ok) {
