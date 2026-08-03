@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Lenis from 'lenis'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Preloader } from './components/layout/Preloader'
 import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
@@ -90,6 +91,7 @@ export default function App() {
             </Suspense>
           )}
         </SignInGate>
+        <SpeedInsights />
       </div>
     </BrowserRouter>
   )
