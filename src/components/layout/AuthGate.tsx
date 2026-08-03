@@ -126,7 +126,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
             />
           )}
           {error && (
-            <p className="rounded-2xl border border-blush-500/30 bg-blush-500/10 px-4 py-2.5 text-[13px] text-blush-300">
+            <p className={`rounded-2xl border px-4 py-2.5 text-[13px] ${
+              error.startsWith('Account created')
+                ? 'border-forest-400/40 bg-forest-500/10 text-forest-300'
+                : 'border-blush-500/30 bg-blush-500/10 text-blush-300'
+            }`}>
               {error}
             </p>
           )}

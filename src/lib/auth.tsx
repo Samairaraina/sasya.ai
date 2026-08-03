@@ -78,6 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (error) return { error: error.message }
 
+    // If session is null, email confirmation is required
+    if (!data.session) {
+      return { error: 'Account created! Please check your email to confirm your account before signing in.' }
+    }
+
     // Create profile row
     if (data.user) {
       await supabase.from('profiles').upsert({
