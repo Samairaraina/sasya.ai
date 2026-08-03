@@ -26,3 +26,6 @@ Thumbs.db
 
 # Prisma generated client
 generated/
+
+# Database backups
+*.bak

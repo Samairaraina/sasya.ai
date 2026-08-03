@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
@@ -93,13 +94,24 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 </motion.span>
               </AnimatePresence>
             </button>
-            <Link
-              to="/contact"
-              className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex"
-            >
-              <LogIn size={15} />
-              Login
-            </Link>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <span className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex">
+                  <LogIn size={15} />
+                  Login
+                </span>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: 'h-9 w-9',
+                    userButtonTrigger: 'rounded-full transition-opacity hover:opacity-80',
+                  },
+                }}
+              />
+            </SignedIn>
             <Link
               to="/pricing"
               className="btn-primary hidden rounded-full px-5 py-2 text-[13px] font-semibold sm:inline-flex"
@@ -159,6 +171,32 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 >
                   Get Started
                 </Link>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.5, ease: EASE }}
+              >
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <span className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white">
+                      <LogIn size={15} />
+                      Login
+                    </span>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <span className="mt-3 inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70">
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          userButtonAvatarBox: 'h-9 w-9',
+                          userButtonTrigger: 'rounded-full',
+                        },
+                      }}
+                    />
+                  </span>
+                </SignedIn>
               </motion.div>
             </div>
           </motion.div>
