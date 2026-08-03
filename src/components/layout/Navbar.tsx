@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { supabase } from '../../supabase'
+import { useAuth } from '../../lib/auth'
 import { LogIn, LogOut, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
@@ -20,7 +20,8 @@ const links = [
 export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const { user, signOut } = useAuth()
+  const userEmail = user?.email ?? null
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -33,19 +34,8 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
     document.body.style.overflow = open ? 'hidden' : ''
   }, [open])
 
-  useEffect(() => {
-    if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setUserEmail(data.session.user.email ?? 'Account')
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session ? session.user.email ?? 'Account' : null)
-    })
-    return () => sub.subscription.unsubscribe()
-  }, [])
-
   async function handleSignOut() {
-    await supabase?.auth.signOut()
+    await signOut()
   }
 
   return (

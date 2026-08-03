@@ -1,36 +1,23 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useState } from 'react'
 import { motion } from 'framer-motion'
-import { supabase } from '../../supabase'
+import { useAuth } from '../../lib/auth'
 import { LogoMark, Wordmark } from '../ui/Logo'
 import { EASE, fadeUp, staggerContainer } from '../../lib/animations'
-
-type Status = 'loading' | 'signedIn' | 'signedOut'
 
 const inputClass =
   'w-full rounded-full border border-white/15 bg-white/[0.05] px-5 py-3 text-sm text-white placeholder-white/40 outline-none transition-colors focus:border-blush-400/70 focus:bg-white/[0.08]'
 
-export function SupabaseGate({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<Status>(() => (supabase ? 'loading' : 'signedIn'))
+export function AuthGate({ children }: { children: ReactNode }) {
+  const { user, loading, signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => {
-      setStatus(data.session ? 'signedIn' : 'signedOut')
-    })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setStatus(session ? 'signedIn' : 'signedOut')
-    })
-    return () => sub.subscription.unsubscribe()
-  }, [])
-
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-forest-900 dark:bg-[#0a1f1d]">
         <motion.div
@@ -45,42 +32,25 @@ export function SupabaseGate({ children }: { children: ReactNode }) {
     )
   }
 
-  if (status === 'signedIn') return <>{children}</>
+  if (user) return <>{children}</>
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!supabase) return
     setError(null)
-    setNotice(null)
     if (mode === 'signup' && password !== confirm) {
       setError('Passwords do not match.')
       return
     }
     setSubmitting(true)
-    if (mode === 'signin') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      setSubmitting(false)
-      if (error) setError(error.message)
-      return
-    }
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const result =
+      mode === 'signin' ? await signIn(email, password) : await signUp(email, password, name)
     setSubmitting(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    if (!data.session) {
-      setMode('signin')
-      setPassword('')
-      setConfirm('')
-      setNotice('Account created. Check your email to confirm your address, then sign in.')
-    }
+    if (result.error) setError(result.error)
   }
 
   function switchMode(next: 'signin' | 'signup') {
     setMode(next)
     setError(null)
-    setNotice(null)
   }
 
   return (
@@ -114,6 +84,16 @@ export function SupabaseGate({ children }: { children: ReactNode }) {
           </p>
         </motion.div>
         <motion.form variants={fadeUp} onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+          {mode === 'signup' && (
+            <input
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name (optional)"
+              className={inputClass}
+            />
+          )}
           <input
             type="email"
             required
@@ -145,8 +125,11 @@ export function SupabaseGate({ children }: { children: ReactNode }) {
               className={inputClass}
             />
           )}
-          {error && <p className="rounded-2xl border border-blush-500/30 bg-blush-500/10 px-4 py-2.5 text-[13px] text-blush-300">{error}</p>}
-          {notice && <p className="rounded-2xl border border-forest-500/30 bg-forest-500/10 px-4 py-2.5 text-[13px] text-forest-200">{notice}</p>}
+          {error && (
+            <p className="rounded-2xl border border-blush-500/30 bg-blush-500/10 px-4 py-2.5 text-[13px] text-blush-300">
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             disabled={submitting}
@@ -173,7 +156,7 @@ export function SupabaseGate({ children }: { children: ReactNode }) {
           )}
         </motion.div>
         <motion.p variants={fadeUp} transition={{ duration: 0.8, ease: EASE }} className="text-[11px] text-white/35">
-          Secured by Supabase Auth · Powered by Sasya AI
+          Secured by Sasya Auth · Powered by Sasya AI
         </motion.p>
       </motion.div>
     </div>

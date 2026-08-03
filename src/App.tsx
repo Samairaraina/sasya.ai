@@ -5,7 +5,8 @@ import Lenis from 'lenis'
 import { Preloader } from './components/layout/Preloader'
 import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
-import { SupabaseGate } from './components/layout/SupabaseGate'
+import { AuthGate } from './components/layout/AuthGate'
+import { AuthProvider } from './lib/auth'
 import { ChatWidget } from './components/sections/ChatWidget'
 import { ScrollToTop } from './components/layout/ScrollToTop'
 import { PageTransition } from './components/layout/PageShell'
@@ -74,23 +75,25 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
-        <SupabaseGate>
-          <div className="noise" />
-          <Preloader onDone={() => setLoaded(true)} />
-          {loaded && (
-            <Suspense fallback={null}>
-              <ScrollToTop />
-              <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
-              <main>
-                <AnimatedRoutes />
-              </main>
-              <Footer />
-              <ChatWidget />
-            </Suspense>
-          )}
-        </SupabaseGate>
-      </div>
+      <AuthProvider>
+        <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
+          <AuthGate>
+            <div className="noise" />
+            <Preloader onDone={() => setLoaded(true)} />
+            {loaded && (
+              <Suspense fallback={null}>
+                <ScrollToTop />
+                <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
+                <main>
+                  <AnimatedRoutes />
+                </main>
+                <Footer />
+                <ChatWidget />
+              </Suspense>
+            )}
+          </AuthGate>
+        </div>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

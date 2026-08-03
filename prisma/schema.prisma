@@ -7,12 +7,32 @@ datasource db {
   provider = "postgresql"
 }
 
-// Starter models — replace with your own
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String?
+  createdAt DateTime  @default(now())
+  farms     Farm[]
+  sessions  Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
 model Farm {
   id        String   @id @default(cuid())
   name      String
   location  String?
   sizeAcres Float?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   crops     Crop[]
 }
@@ -22,7 +42,10 @@ model Crop {
   name      String
   variety   String?
   plantedAt DateTime?
+  health    String?
+  notes     String?
   farmId    String
   farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
