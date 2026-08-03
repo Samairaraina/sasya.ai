@@ -5,7 +5,7 @@ import Lenis from 'lenis'
 import { Preloader } from './components/layout/Preloader'
 import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
-import { SignInGate } from './components/layout/SignInGate'
+import { SupabaseGate } from './components/layout/SupabaseGate'
 import { ChatWidget } from './components/sections/ChatWidget'
 import { ScrollToTop } from './components/layout/ScrollToTop'
 import { PageTransition } from './components/layout/PageShell'
@@ -75,7 +75,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
-        <SignInGate>
+        <SupabaseGate>
           <div className="noise" />
           <Preloader onDone={() => setLoaded(true)} />
           {loaded && (
@@ -89,7 +89,7 @@ export default function App() {
               <ChatWidget />
             </Suspense>
           )}
-        </SignInGate>
+        </SupabaseGate>
       </div>
     </BrowserRouter>
   )

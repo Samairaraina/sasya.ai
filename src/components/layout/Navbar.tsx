@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
-import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
+import { supabase } from '../../supabase'
+import { LogIn, LogOut, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
-
-const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 const links = [
   { label: 'Home', to: '/' },
@@ -22,6 +20,7 @@ const links = [
 export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -33,6 +32,21 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
   }, [open])
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setUserEmail(data.session.user.email ?? 'Account')
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session ? session.user.email ?? 'Account' : null)
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
+  async function handleSignOut() {
+    await supabase?.auth.signOut()
+  }
 
   return (
     <>
@@ -96,31 +110,23 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 </motion.span>
               </AnimatePresence>
             </button>
-            {hasClerk && (
-              <>
-                <SignedOut>
-                  <SignInButton mode="modal">
-                    <span className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex">
-                      <LogIn size={15} />
-                      Login
-                    </span>
-                  </SignInButton>
-                </SignedOut>
-                <SignedIn>
-                  <UserButton
-                    appearance={{
-                      elements: {
-                        userButtonAvatarBox: 'h-9 w-9',
-                        userButtonTrigger: 'rounded-full transition-opacity hover:opacity-80',
-                      },
-                    }}
-                  />
-                </SignedIn>
-              </>
-            )}
-            {!hasClerk && (
+            {userEmail ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden max-w-[160px] truncate text-[13px] font-medium text-white/70 md:block">
+                  {userEmail}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  aria-label="Sign out"
+                  title="Sign out"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
               <Link
-                to="/contact"
+                to="/"
                 className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex"
               >
                 <LogIn size={15} />
@@ -192,33 +198,22 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.5, ease: EASE }}
               >
-                {hasClerk && (
+                {userEmail ? (
                   <>
-                    <SignedOut>
-                      <SignInButton mode="modal">
-                        <span className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white">
-                          <LogIn size={15} />
-                          Login
-                        </span>
-                      </SignInButton>
-                    </SignedOut>
-                    <SignedIn>
-                      <span className="mt-3 inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70">
-                        <UserButton
-                          appearance={{
-                            elements: {
-                              userButtonAvatarBox: 'h-9 w-9',
-                              userButtonTrigger: 'rounded-full',
-                            },
-                          }}
-                        />
-                      </span>
-                    </SignedIn>
+                    <span className="mt-3 inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70">
+                      {userEmail}
+                    </span>
+                    <button
+                      onClick={handleSignOut}
+                      className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
+                    >
+                      <LogOut size={15} />
+                      Sign out
+                    </button>
                   </>
-                )}
-                {!hasClerk && (
+                ) : (
                   <Link
-                    to="/contact"
+                    to="/"
                     onClick={() => setOpen(false)}
                     className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
                   >
