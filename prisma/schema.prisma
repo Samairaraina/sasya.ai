@@ -7,14 +7,29 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  FARMER
+  EXPERT
+  ADMIN
+}
+
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  password  String
-  name      String?
-  createdAt DateTime  @default(now())
-  farms     Farm[]
-  sessions  Session[]
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String
+  name         String?
+  phone        String?
+  role         Role      @default(FARMER)
+  language     String    @default("en")
+  location     String?
+  profileImage String?
+  createdAt    DateTime  @default(now())
+
+  farms          Farm[]
+  sessions       Session[]
+  diseaseReports DiseaseReport[]
+  notifications  Notification[]
+  feedbacks      Feedback[]
 }
 
 model Session {
@@ -48,4 +63,73 @@ model Crop {
   farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DiseaseReport {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cropName       String
+  diseaseName    String?
+  confidence     Float?
+  image          String
+  recommendation String?
+  createdAt      DateTime    @default(now())
+  prediction     Prediction?
+}
+
+model Prediction {
+  id            String        @id @default(cuid())
+  reportId      String        @unique
+  report        DiseaseReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  modelVersion  String
+  confidence    Float
+  rawOutput     String
+}
+
+model Weather {
+  id          String   @id @default(cuid())
+  location    String   @unique
+  temperature Float
+  humidity    Float
+  rainfall    Float?
+  updatedAt   DateTime @updatedAt
+}
+
+model MarketPrice {
+  id        String   @id @default(cuid())
+  crop      String
+  market    String
+  state     String
+  price     Float
+  updatedAt DateTime @updatedAt
+
+  @@unique([crop, market, state])
+}
+
+model GovernmentScheme {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  eligibility String
+  link        String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  message   String
+  createdAt DateTime @default(now())
 }

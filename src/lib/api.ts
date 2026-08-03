@@ -48,3 +48,20 @@ export function apiPatch<T>(path: string, body?: unknown) {
 export function apiDelete<T>(path: string) {
   return request<T>(path, { method: 'DELETE' })
 }
+
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  })
+  if (!res.ok) {
+    let message = `Upload failed (${res.status})`
+    try {
+      const body = await res.json()
+      if (body && typeof body.error === 'string') message = body.error
+    } catch {}
+    throw new ApiError(res.status, message)
+  }
+  return res.json() as Promise<T>
+}

@@ -1,47 +1,70 @@
-import 'dotenv/config'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import express from 'express'
-import cookieParser from 'cookie-parser'
-import authRouter from './routes/auth'
-import cropsRouter from './routes/crops'
-import aiRouter from './routes/ai'
-import { requireAuth } from './middleware/auth'
+import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const distDir = path.resolve(__dirname, '../dist')
+import apiRoutes from './routes/index';
+import { errorHandler } from './middleware/error';
 
-export const app = express()
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distDir = path.resolve(__dirname, '../dist');
 
-app.use(express.json({ limit: '12mb' }))
-app.use(cookieParser())
+export const app = express();
 
+// Security Middlewares
+app.use(helmet());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+app.use('/api', limiter);
+
+// Parsing Middlewares
+app.use(express.json({ limit: '12mb' }));
+app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+app.use(cookieParser());
+
+// Static uploads directory (temp before Supabase Storage)
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+// Swagger API Documentation
+try {
+  const swaggerDocument = YAML.load(path.join(__dirname, './config/swagger.yaml'));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (error) {
+  console.error("Could not load swagger.yaml");
+}
+
+// Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
-})
+  res.json({ ok: true });
+});
 
-app.use('/api/auth', authRouter)
-app.use('/api/crops', requireAuth, cropsRouter)
-app.use('/api/ai', requireAuth, aiRouter)
+// Main API Routes
+app.use('/api', apiRoutes);
 
-app.use(express.static(distDir))
+// Frontend proxy
+app.use(express.static(distDir));
 
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) return next()
+  if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(distDir, 'index.html'), (err) => {
-    if (err) next(err)
-  })
-})
+    if (err) next(err);
+  });
+});
 
-app.use(
-  (err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const rawStatus =
-      typeof err === 'object' && err !== null && 'status' in err
-        ? Number((err as { status: unknown }).status)
-        : 500
-    const status = Number.isFinite(rawStatus) && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500
-    const message = err instanceof Error ? err.message : 'Internal server error'
-    console.error(err)
-    res.status(status).json({ error: message })
-  },
-)
+// Global Error Handler
+app.use(errorHandler);

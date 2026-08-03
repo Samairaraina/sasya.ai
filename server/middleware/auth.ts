@@ -1,22 +1,50 @@
-import type { NextFunction, Request, Response } from 'express'
-import { prisma } from '../../lib/prisma'
-import { SESSION_COOKIE } from '../lib/session'
+import type { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies?.[SESSION_COOKIE] as string | undefined
-  if (!token) {
-    return res.status(401).json({ error: 'Not signed in.' })
-  }
-  const session = await prisma.session.findUnique({
-    where: { token },
-    include: { user: { select: { id: true, email: true, name: true } } },
-  })
-  if (!session || session.expiresAt < new Date()) {
-    if (session) {
-      await prisma.session.delete({ where: { id: session.id } }).catch(() => {})
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: 'FARMER' | 'EXPERT' | 'ADMIN';
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser;
     }
-    return res.status(401).json({ error: 'Session expired. Please sign in again.' })
   }
-  req.user = session.user
-  next()
+}
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.headers.authorization;
+    let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
+    
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication token missing.' });
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET) as AuthUser;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token.' });
+  }
+}
+
+export function requireRole(roles: Array<'FARMER' | 'EXPERT' | 'ADMIN'>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions.' });
+    }
+    next();
+  };
 }
