@@ -184,7 +184,7 @@ CREATE POLICY "farms_own" ON public.farms FOR ALL USING (auth.uid() = user_id);
 
 -- Crops: users manage crops via their farms
 CREATE POLICY "crops_own" ON public.crops FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.farms f WHERE f.id = farm_id AND f.user_id = auth.uid())
+  farm_id IN (SELECT id FROM public.farms WHERE user_id = auth.uid())
 );
 
 -- Disease reports: users manage their own
@@ -192,7 +192,7 @@ CREATE POLICY "disease_reports_own" ON public.disease_reports FOR ALL USING (aut
 
 -- Predictions: readable if user owns the report
 CREATE POLICY "predictions_own" ON public.predictions FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.disease_reports dr WHERE dr.id = report_id AND dr.user_id = auth.uid())
+  report_id IN (SELECT id FROM public.disease_reports WHERE user_id = auth.uid())
 );
 
 -- Weather: public read
