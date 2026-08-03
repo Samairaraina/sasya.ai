@@ -6,6 +6,8 @@ import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
 
+const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
 const links = [
   { label: 'Home', to: '/' },
   { label: 'Features', to: '/features' },
@@ -94,24 +96,37 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 </motion.span>
               </AnimatePresence>
             </button>
-            <SignedOut>
-              <SignInButton mode="modal">
-                <span className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex">
-                  <LogIn size={15} />
-                  Login
-                </span>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: 'h-9 w-9',
-                    userButtonTrigger: 'rounded-full transition-opacity hover:opacity-80',
-                  },
-                }}
-              />
-            </SignedIn>
+            {hasClerk && (
+              <>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <span className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex">
+                      <LogIn size={15} />
+                      Login
+                    </span>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        userButtonAvatarBox: 'h-9 w-9',
+                        userButtonTrigger: 'rounded-full transition-opacity hover:opacity-80',
+                      },
+                    }}
+                  />
+                </SignedIn>
+              </>
+            )}
+            {!hasClerk && (
+              <Link
+                to="/contact"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex"
+              >
+                <LogIn size={15} />
+                Login
+              </Link>
+            )}
             <Link
               to="/pricing"
               className="btn-primary hidden rounded-full px-5 py-2 text-[13px] font-semibold sm:inline-flex"
@@ -177,26 +192,40 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.5, ease: EASE }}
               >
-                <SignedOut>
-                  <SignInButton mode="modal">
-                    <span className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white">
-                      <LogIn size={15} />
-                      Login
-                    </span>
-                  </SignInButton>
-                </SignedOut>
-                <SignedIn>
-                  <span className="mt-3 inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70">
-                    <UserButton
-                      appearance={{
-                        elements: {
-                          userButtonAvatarBox: 'h-9 w-9',
-                          userButtonTrigger: 'rounded-full',
-                        },
-                      }}
-                    />
-                  </span>
-                </SignedIn>
+                {hasClerk && (
+                  <>
+                    <SignedOut>
+                      <SignInButton mode="modal">
+                        <span className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white">
+                          <LogIn size={15} />
+                          Login
+                        </span>
+                      </SignInButton>
+                    </SignedOut>
+                    <SignedIn>
+                      <span className="mt-3 inline-flex items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70">
+                        <UserButton
+                          appearance={{
+                            elements: {
+                              userButtonAvatarBox: 'h-9 w-9',
+                              userButtonTrigger: 'rounded-full',
+                            },
+                          }}
+                        />
+                      </span>
+                    </SignedIn>
+                  </>
+                )}
+                {!hasClerk && (
+                  <Link
+                    to="/contact"
+                    onClick={() => setOpen(false)}
+                    className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
+                  >
+                    <LogIn size={15} />
+                    Login
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>

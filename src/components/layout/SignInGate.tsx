@@ -5,10 +5,8 @@ import { EASE, fadeUp, staggerContainer } from '../../lib/animations'
 
 const hasClerk = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
-export function SignInGate({ children }: { children: React.ReactNode }) {
+function GateContent({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth()
-
-  if (!hasClerk) return <>{children}</>
 
   if (!isLoaded) {
     return (
@@ -75,4 +73,9 @@ export function SignInGate({ children }: { children: React.ReactNode }) {
       </motion.div>
     </div>
   )
+}
+
+export function SignInGate({ children }: { children: React.ReactNode }) {
+  if (!hasClerk) return <>{children}</>
+  return <GateContent>{children}</GateContent>
 }
