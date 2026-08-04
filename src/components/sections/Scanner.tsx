@@ -1,4 +1,4 @@
-﻿import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Camera,
@@ -33,8 +33,12 @@ type ScanResult = {
   disease: string
   confidence: number
   severity: string
+  affectedArea?: string
+  urgency?: string
+  cropType?: string
   symptoms: string
   causes: string
+  prevention?: string
   organic: string
   chemical: string
   fertilizer: string
@@ -44,26 +48,57 @@ type ScanResult = {
 
 const result: ScanResult = {
   disease: 'Early Blight (Alternaria solani)',
-  confidence: 96.4,
+  confidence: 96,
   severity: 'Moderate',
-  symptoms: 'Dark brown spots with concentric rings on lower leaves, yellowing around lesions.',
-  causes: 'Fungal spores spread by rain splash, high humidity above 85%, night temperatures 15-20Â°C.',
-  organic: 'Spray neem oil 3% + baking soda solution weekly. Remove and destroy infected leaves.',
-  chemical: 'Mancozeb 75% WP @ 2.5g/L or Chlorothalonil @ 2g/L every 10-14 days.',
-  fertilizer: 'Balanced NPK 19:19:19 @ 2kg/acre after treatment. Add micronutrient mix.',
-  recovery: '10â€“14 days',
+  affectedArea: '~25%',
+  urgency: 'Act within 1 week',
+  cropType: 'Tomato',
+  symptoms: 'Dark brown spots with concentric rings on lower leaves, yellowing around lesions. Lesions are 1–2 cm in diameter with a yellow halo.',
+  causes: 'Fungal pathogen Alternaria solani. Spreads via rain splash and wind. Thrives in humidity >85% and temperatures 15–20°C.',
+  prevention: 'Use certified disease-free seeds. Maintain plant spacing for airflow. Avoid overhead irrigation. Rotate crops every 2–3 seasons.',
+  organic: '1. Spray Neem oil 3% (30ml/L) every 7 days. 2. Apply Trichoderma viride @ 5g/L soil drench. 3. Remove and destroy infected leaves immediately. 4. Use Bordeaux mixture 1% as preventive spray.',
+  chemical: 'Mancozeb 75% WP (Dithane M-45) @ 2.5g/L or Chlorothalonil 75% WP (Kavach) @ 2g/L. Spray every 10–14 days. Rotate fungicides to prevent resistance.',
+  fertilizer: 'Apply NPK 19:19:19 @ 2kg/acre via fertigation. Add micronutrients (Zinc 0.5%, Boron 0.1%) as foliar spray to boost immunity.',
+  recovery: '10–14 days',
   experts: [
     { name: 'Dr. Meera Sharma', role: 'Plant Pathologist, KVK Pune', rating: 4.9 },
     { name: 'Ramesh Patil', role: 'Senior Agronomist, 22 yrs exp', rating: 4.8 },
   ],
 }
 
-const VISION_PROMPT =
-  'Analyze this crop leaf photo for disease and health. Return ONLY valid JSON (no markdown, no extra text) with exactly these keys: ' +
-  '"disease" (disease or condition name, or "No clear disease detected"), "confidence" (number 0-100), ' +
-  '"severity" ("Low", "Moderate", or "High"), "symptoms", "causes", "organic" (organic treatment), ' +
-  '"chemical" (chemical treatment), "fertilizer" (recommended fertilizer plan), ' +
-  '"recovery" (estimated recovery time in days). Write advice in simple practical language for Indian farmers.'
+const VISION_PROMPT = `You are an expert plant pathologist and agronomist specializing in Indian agriculture with 20+ years of experience. Analyze this crop image carefully and thoroughly.
+
+TASK: Identify any plant disease, pest damage, nutritional deficiency, or abiotic stress visible in the image.
+
+IMPORTANT RULES:
+- If no disease is visible, say "Healthy Plant - No Disease Detected"
+- Be highly specific with disease names (include scientific name in parentheses)
+- All treatment advice must use products available in India with Indian market names
+- Write in simple language that an Indian farmer can understand
+- Confidence should reflect how clear the disease signs are (not your general knowledge)
+
+Return ONLY a valid JSON object with NO markdown, NO code fences, NO extra text. Use exactly these keys:
+
+{
+  "disease": "Full disease name (Scientific name)",
+  "confidence": 92,
+  "severity": "Low | Moderate | High | Critical",
+  "affectedArea": "Estimated % of plant affected, e.g. 15%",
+  "urgency": "Monitor | Act within 1 week | Act within 48 hours | Act immediately",
+  "cropType": "Detected crop type",
+  "symptoms": "Clear description of visible symptoms in 2-3 sentences",
+  "causes": "What causes this disease - pathogen type, environmental triggers, spread mechanism",
+  "prevention": "3-4 specific prevention measures to stop recurrence",
+  "organic": "Step-by-step organic/natural treatment using neem, trichoderma, etc. available in India",
+  "chemical": "Specific fungicide/pesticide with Indian brand names, dosage per litre/acre, and application frequency",
+  "fertilizer": "Specific fertilizer recommendation to boost plant immunity and recovery",
+  "recovery": "Estimated recovery time with consistent treatment",
+  "experts": [
+    {"name": "Dr. Meera Sharma", "role": "Plant Pathologist, KVK Pune", "rating": 4.9},
+    {"name": "Ramesh Patil", "role": "Senior Agronomist, 22 yrs exp", "rating": 4.8}
+  ]
+}`
+
 
 export function Scanner() {
   const [stage, setStage] = useState<Stage>('idle')
@@ -352,22 +387,38 @@ export function Scanner() {
                     </div>
                   </div>
 
+                  {/* Quick stats */}
+                  {(report.urgency || report.affectedArea || report.cropType) && (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {report.cropType && (
+                        <span className="rounded-full bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/70">🌿 {report.cropType}</span>
+                      )}
+                      {report.affectedArea && (
+                        <span className="rounded-full bg-amber-400/15 px-3 py-1 text-[11px] font-semibold text-amber-300">📊 {report.affectedArea} affected</span>
+                      )}
+                      {report.urgency && (
+                        <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                          report.urgency.includes('immediately') ? 'bg-red-500/20 text-red-300' :
+                          report.urgency.includes('48') ? 'bg-orange-400/20 text-orange-300' :
+                          report.urgency.includes('week') ? 'bg-amber-400/15 text-amber-300' :
+                          'bg-emerald-400/15 text-emerald-300'
+                        }`}>⚡ {report.urgency}</span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    {[
+                    {([
                       { t: 'Symptoms', v: report.symptoms },
                       { t: 'Possible Causes', v: report.causes },
+                      ...(report.prevention ? [{ t: 'Prevention', v: report.prevention, accent: false }] : []),
                       { t: 'Organic Treatment', v: report.organic, accent: true },
                       { t: 'Chemical Treatment', v: report.chemical, accent: true },
                       { t: 'Recommended Fertilizer', v: report.fertilizer },
                       { t: 'Estimated Recovery', v: `${report.recovery} with consistent treatment`, accent: true },
-                    ].map((b) => (
-                      <div
-                        key={b.t}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
-                      >
-                        <p className={`text-[11px] font-semibold uppercase tracking-wider ${b.accent ? 'text-blush-400' : 'text-emerald-300'}`}>
-                          {b.t}
-                        </p>
+                    ] as { t: string; v: string; accent?: boolean }[]).map((b) => (
+                      <div key={b.t} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <p className={`text-[11px] font-semibold uppercase tracking-wider ${b.accent ? 'text-blush-400' : 'text-emerald-300'}`}>{b.t}</p>
                         <p className="mt-1.5 text-sm leading-relaxed text-white/70">{b.v}</p>
                       </div>
                     ))}
