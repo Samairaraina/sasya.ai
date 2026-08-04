@@ -106,24 +106,45 @@ export function Scanner() {
   const [preview, setPreview] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [liveResult, setLiveResult] = useState<ScanResult | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const start = useCallback((dataUrl?: string) => {
     setStage('processing')
     setStepIdx(0)
+    setAiError(null)
     steps.forEach((s, i) => {
       setTimeout(() => setStepIdx(i), s.dur)
     })
     setLiveResult(null)
-    const analyze = hasGeminiKey() && dataUrl
-      ? geminiVision(dataUrl, VISION_PROMPT)
-          .then((text) => extractJson<ScanResult>(text))
-          .catch(() => null)
-      : Promise.resolve(null)
-    analyze.then((parsed) => {
-      setLiveResult(parsed)
-      setStage('done')
-    })
+
+    if (!hasGeminiKey()) {
+      setTimeout(() => {
+        setAiError('VITE_GEMINI_API_KEY not set — showing demo data')
+        setStage('done')
+      }, 3000)
+      return
+    }
+
+    if (!dataUrl) {
+      setTimeout(() => {
+        setAiError('No image provided — showing demo data')
+        setStage('done')
+      }, 3000)
+      return
+    }
+
+    geminiVision(dataUrl, VISION_PROMPT)
+      .then((text) => {
+        const parsed = extractJson<ScanResult>(text)
+        if (!parsed) setAiError(`Could not parse AI response — showing demo data`)
+        setLiveResult(parsed)
+        setStage('done')
+      })
+      .catch((err: Error) => {
+        setAiError(`AI error: ${err.message} — showing demo data`)
+        setStage('done')
+      })
   }, [])
 
   const onFile = useCallback(
@@ -151,6 +172,7 @@ export function Scanner() {
   }, [])
 
   const report = liveResult ?? result
+  const isDemo = !liveResult
   const experts = (liveResult?.experts ?? result.experts) ?? []
 
   return (
@@ -362,18 +384,25 @@ export function Scanner() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: EASE }}
                 >
+                  {/* Error / demo banner */}
+                  {aiError && (
+                    <div className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-[12px] text-amber-300">
+                      ⚠️ {aiError}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="rounded-full bg-blush-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-blush-400">
-                          AI Report
+                          {isDemo ? 'Demo Report' : 'AI Report'}
                         </span>
                         <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold text-emerald-300">
                           {report.severity} severity
                         </span>
                         {liveResult && (
                           <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-white/60">
-                            Gemini live
+                            Gemini live ✓
                           </span>
                         )}
                       </div>
@@ -386,6 +415,7 @@ export function Scanner() {
                       <p className="text-xs text-white/50">Confidence</p>
                     </div>
                   </div>
+
 
                   {/* Quick stats */}
                   {(report.urgency || report.affectedArea || report.cropType) && (
