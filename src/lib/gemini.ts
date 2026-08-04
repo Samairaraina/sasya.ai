@@ -1,59 +1,64 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Calls Gemini REST API directly — no npm package needed, works on any host.
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string
+const BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const MODEL = 'gemini-2.0-flash'
 
 export function hasGeminiKey(): boolean {
   return Boolean(API_KEY)
-}
-
-function getClient() {
-  if (!API_KEY) throw new Error('VITE_GEMINI_API_KEY is not set')
-  return new GoogleGenerativeAI(API_KEY)
 }
 
 // ─── Text chat ───────────────────────────────────────────────────────────────
 export async function geminiChat(
   messages: { role: 'user' | 'model'; text: string }[],
 ): Promise<string> {
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-  const history = messages.slice(0, -1).map((m) => ({
+  const contents = messages.map((m) => ({
     role: m.role,
     parts: [{ text: m.text }],
   }))
-  const last = messages[messages.length - 1]
-  const chat = model.startChat({ history })
-  const result = await chat.sendMessage(last.text)
-  return result.response.text()
+
+  const res = await fetch(`${BASE}/${MODEL}:generateContent?key=${API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents }),
+  })
+
+  if (!res.ok) throw new Error(`Gemini chat error ${res.status}: ${await res.text()}`)
+  const json = await res.json()
+  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
 // ─── Vision / Disease Detection ───────────────────────────────────────────────
 export async function geminiVision(imageDataUrl: string, prompt: string): Promise<string> {
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.1,   // Low temp = more factual, consistent
-      topP: 0.8,
-      maxOutputTokens: 2048,
-    },
-  })
-
-  // Convert data URL to inline image part
+  // Split data URL into mime type and base64 payload
   const [header, base64Data] = imageDataUrl.split(',')
   const mimeType = header.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg'
 
-  const result = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType,
-        data: base64Data,
+  const body = {
+    contents: [
+      {
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: base64Data } },
+        ],
       },
+    ],
+    generationConfig: {
+      temperature: 0.1,   // Low = more factual, consistent disease identification
+      topP: 0.8,
+      maxOutputTokens: 2048,
     },
-  ])
+  }
 
-  return result.response.text()
+  const res = await fetch(`${BASE}/${MODEL}:generateContent?key=${API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) throw new Error(`Gemini vision error ${res.status}: ${await res.text()}`)
+  const json = await res.json()
+  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
 // ─── JSON extractor ───────────────────────────────────────────────────────────
