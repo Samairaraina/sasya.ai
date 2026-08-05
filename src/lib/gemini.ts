@@ -1,64 +1,81 @@
-// Calls Gemini REST API directly — no npm package needed, works on any host.
+// AI service — uses OpenAI GPT-4o for vision (disease detection) and chat.
+// Keeps the same exported function signatures so no other file needs changing.
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string
-const BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
-const MODEL = 'gemini-2.0-flash'
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string
+const BASE = 'https://api.openai.com/v1/chat/completions'
 
 export function hasGeminiKey(): boolean {
-  return Boolean(API_KEY)
+  // Returns true if OpenAI key is set (name kept for backwards compatibility)
+  return Boolean(OPENAI_KEY)
 }
 
-// ─── Text chat ───────────────────────────────────────────────────────────────
+// ─── Text chat (GPT-4o-mini — fast and cheap) ────────────────────────────────
 export async function geminiChat(
   messages: { role: 'user' | 'model'; text: string }[],
 ): Promise<string> {
-  const contents = messages.map((m) => ({
-    role: m.role,
-    parts: [{ text: m.text }],
-  }))
-
-  const res = await fetch(`${BASE}/${MODEL}:generateContent?key=${API_KEY}`, {
+  const res = await fetch(BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents }),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: messages.map((m) => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.text,
+      })),
+      temperature: 0.7,
+      max_tokens: 1024,
+    }),
   })
 
-  if (!res.ok) throw new Error(`Gemini chat error ${res.status}: ${await res.text()}`)
-  const json = await res.json()
-  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-}
-
-// ─── Vision / Disease Detection ───────────────────────────────────────────────
-export async function geminiVision(imageDataUrl: string, prompt: string): Promise<string> {
-  // Split data URL into mime type and base64 payload
-  const [header, base64Data] = imageDataUrl.split(',')
-  const mimeType = header.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg'
-
-  const body = {
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: base64Data } },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.1,   // Low = more factual, consistent disease identification
-      topP: 0.8,
-      maxOutputTokens: 2048,
-    },
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`OpenAI chat error ${res.status}: ${err}`)
   }
 
-  const res = await fetch(`${BASE}/${MODEL}:generateContent?key=${API_KEY}`, {
+  const json = await res.json()
+  return json.choices?.[0]?.message?.content ?? ''
+}
+
+// ─── Vision / Disease Detection (GPT-4o — best multimodal model) ─────────────
+export async function geminiVision(imageDataUrl: string, prompt: string): Promise<string> {
+  const res = await fetch(BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            {
+              type: 'image_url',
+              image_url: {
+                url: imageDataUrl,
+                detail: 'high', // Use high detail for accurate disease detection
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0.1,   // Low = precise, consistent disease identification
+      max_tokens: 2048,
+    }),
   })
 
-  if (!res.ok) throw new Error(`Gemini vision error ${res.status}: ${await res.text()}`)
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`OpenAI vision error ${res.status}: ${err}`)
+  }
+
   const json = await res.json()
-  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  return json.choices?.[0]?.message?.content ?? ''
 }
 
 // ─── JSON extractor ───────────────────────────────────────────────────────────
