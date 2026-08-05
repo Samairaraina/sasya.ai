@@ -1,84 +1,99 @@
-// AI service — uses OpenAI GPT-4o for vision (disease detection) and chat.
+// AI service — uses Google Gemini 1.5 Flash for vision (disease detection), chat, and insights.
 // Keeps the same exported function signatures so no other file needs changing.
 
-const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string
-const BASE = 'https://api.openai.com/v1/chat/completions'
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY as string
+const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`
 
 export function hasGeminiKey(): boolean {
-  // Returns true if OpenAI key is set (name kept for backwards compatibility)
-  return Boolean(OPENAI_KEY)
+  return Boolean(GEMINI_KEY)
 }
 
-// ─── Text chat (GPT-4o-mini — fast and cheap) ────────────────────────────────
+// ─── Text chat ────────────────────────────────────────────────────────
 export async function geminiChat(
   messages: { role: 'user' | 'model'; text: string }[],
 ): Promise<string> {
-  const res = await fetch(BASE, {
+  const res = await fetch(BASE_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: messages.map((m) => ({
-        role: m.role === 'model' ? 'assistant' : 'user',
-        content: m.text,
+      contents: messages.map((m) => ({
+        role: m.role,
+        parts: [{ text: m.text }],
       })),
-      temperature: 0.7,
-      max_tokens: 1024,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
     }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI chat error ${res.status}: ${err}`)
+    throw new Error(`Gemini chat error ${res.status}: ${err}`)
   }
 
   const json = await res.json()
-  return json.choices?.[0]?.message?.content ?? ''
+  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
-// ─── Vision / Disease Detection (GPT-4o — best multimodal model) ─────────────
+// ─── Vision / Disease Detection ───────────────────────────────────────
 export async function geminiVision(imageDataUrl: string, prompt: string): Promise<string> {
-  const res = await fetch(BASE, {
+  // imageDataUrl is usually "data:image/jpeg;base64,....."
+  // Extract mime_type and base64 string
+  let mimeType = 'image/jpeg'
+  let base64Data = imageDataUrl
+
+  if (imageDataUrl.startsWith('data:')) {
+    const parts = imageDataUrl.split(',')
+    if (parts.length === 2) {
+      mimeType = parts[0].replace('data:', '').split(';')[0]
+      base64Data = parts[1]
+    }
+  }
+
+  // Gemini vision does not support SVG. If we receive SVG (like the DEMO_LEAF), we will just send the text prompt 
+  // or throw an error. But actually DEMO_LEAF isn't base64, it's URL encoded!
+  // Wait, the UI only calls start() with DEMO_LEAF if we use the camera button. We fixed that earlier to trigger `!dataUrl` internally. 
+  // Let's ensure SVG is stripped or rejected gracefully if it somehow gets here.
+  if (mimeType.includes('svg')) {
+    // If it's an SVG (like the fallback camera), just send a blank prompt or simulate failure to use demo data
+    throw new Error("SVG format not supported by Gemini Vision API")
+  }
+
+  const res = await fetch(BASE_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
+      contents: [
         {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
+          parts: [
+            { text: prompt },
             {
-              type: 'image_url',
-              image_url: {
-                url: imageDataUrl,
-                detail: 'high', // Use high detail for accurate disease detection
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data,
               },
             },
           ],
         },
       ],
-      temperature: 0.1,   // Low = precise, consistent disease identification
-      max_tokens: 2048,
+      generationConfig: {
+        temperature: 0.1, // Low = precise, consistent disease identification
+        maxOutputTokens: 2048,
+      },
     }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenAI vision error ${res.status}: ${err}`)
+    throw new Error(`Gemini vision error ${res.status}: ${err}`)
   }
 
   const json = await res.json()
-  return json.choices?.[0]?.message?.content ?? ''
+  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 }
 
-// ─── JSON extractor ───────────────────────────────────────────────────────────
+// ─── JSON extractor ───────────────────────────────────────────────────
 export function extractJson<T>(text: string): T | null {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
   const candidate = fenced ? fenced[1] : text
@@ -92,7 +107,7 @@ export function extractJson<T>(text: string): T | null {
   }
 }
 
-// ─── Dashboard Insights Generator (GPT-4o-mini) ──────────────────────────────
+// ─── Dashboard Insights Generator ─────────────────────────────────────
 export async function generateDashboardInsights(
   weather: any,
   crops: any[],
@@ -129,25 +144,25 @@ Return ONLY valid JSON wrapped in a codeblock matching this interface exactly. D
 `
 
   try {
-    const res = await fetch(BASE, {
+    const res = await fetch(BASE_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: 'application/json',
+        },
       }),
     })
 
     if (!res.ok) throw new Error('API Error')
     const json = await res.json()
-    const content = json.choices?.[0]?.message?.content ?? ''
-    return extractJson(content)
+    const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    return extractJson(content) || JSON.parse(content) // fallback to direct parse if response_mime_type worked well
   } catch (err) {
     console.error('Insight generation failed:', err)
     return null
   }
 }
+
