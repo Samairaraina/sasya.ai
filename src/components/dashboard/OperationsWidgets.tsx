@@ -2,12 +2,16 @@ import { motion } from 'framer-motion'
 import { CheckCircle2, AlertCircle, Clock, Calendar, Leaf, Scan } from 'lucide-react'
 
 // --- Crop Progress ---
-const crops = [
-  { name: 'Rice', stage: 'Flowering', progress: 82 },
-  { name: 'Cotton', stage: 'Growing', progress: 60 },
-]
 
-export function CropProgressWidget() {
+export function CropProgressWidget({ crops = [] }: { crops?: any[] }) {
+  // Generate random deterministic progress based on crop name to avoid having 0 progress for everything.
+  // In a full app, this would be computed from planted_at vs expected harvest.
+  const getProgress = (name: string) => {
+    let hash = 0
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    return Math.abs(hash % 100)
+  }
+
   return (
     <div className="flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-6 backdrop-blur">
       <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white/50 uppercase tracking-wider">
@@ -15,24 +19,36 @@ export function CropProgressWidget() {
         Crop Progress
       </div>
       
-      <div className="flex flex-col gap-5">
-        {crops.map(crop => (
-          <div key={crop.name}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-white">{crop.name}</span>
-              <span className="text-sm font-semibold text-emerald-400">{crop.progress}%</span>
+      <div className="flex flex-col gap-5 flex-1">
+        {crops.length > 0 ? crops.map(crop => {
+          const progress = getProgress(crop.name)
+          const stage = progress > 80 ? 'Harvesting' : progress > 40 ? 'Flowering' : 'Growing'
+          return (
+            <div key={crop.id}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-white">{crop.name}</span>
+                <span className="text-sm font-semibold text-emerald-400">{progress}%</span>
+              </div>
+              <p className="text-xs text-white/50 mb-2 uppercase tracking-wide">{stage}</p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className="h-full bg-emerald-400"
+                />
+              </div>
             </div>
-            <p className="text-xs text-white/50 mb-2 uppercase tracking-wide">{crop.stage}</p>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${crop.progress}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-                className="h-full bg-emerald-400"
-              />
+          )
+        }) : (
+          <div className="flex flex-col items-center justify-center h-full text-center py-6">
+            <div className="rounded-full bg-white/5 p-4 mb-3">
+              <Leaf size={24} className="text-white/20" />
             </div>
+            <p className="text-sm font-semibold text-white/70">No active crops</p>
+            <p className="text-xs text-white/40 mt-1">Add crops to track progress.</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   )
@@ -84,33 +100,40 @@ export function RecentScansWidget({ reports }: { reports: any[] }) {
 }
 
 // --- Activity Timeline ---
-const timelineEvents = [
-  { time: '10:20 AM', title: 'Rice scanned', color: 'bg-blue-400' },
-  { time: '11:15 AM', title: 'Expense added', color: 'bg-blush-400' },
-  { time: '12:00 PM', title: 'AI Recommendation generated', color: 'bg-purple-400' },
-  { time: '2:30 PM', title: 'Weather updated', color: 'bg-emerald-400' },
-]
+export function ActivityTimelineWidget({ reports = [] }: { reports?: any[] }) {
+  // Sort reports by date descending and take top 4
+  const sortedReports = [...reports].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4)
 
-export function ActivityTimelineWidget() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-6 backdrop-blur">
+    <div className="flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-6 backdrop-blur h-full">
       <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white/50 uppercase tracking-wider">
         <Clock size={16} className="text-butter" />
         Activity Timeline
       </div>
       
-      <div className="relative pl-4 pt-2">
-        <div className="absolute bottom-0 left-[23px] top-4 w-px bg-white/10" />
-        <div className="flex flex-col gap-6">
-          {timelineEvents.map((ev, i) => (
-            <div key={i} className="relative pl-6">
-              <div className={`absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-forest-950 ${ev.color}`} />
-              <p className="text-xs text-white/50 mb-1">{ev.time}</p>
-              <p className="text-sm font-semibold text-white/80">{ev.title}</p>
-            </div>
-          ))}
+      {sortedReports.length > 0 ? (
+        <div className="relative pl-4 pt-2">
+          <div className="absolute bottom-0 left-[23px] top-4 w-px bg-white/10" />
+          <div className="flex flex-col gap-6">
+            {sortedReports.map((ev, i) => {
+              const time = new Date(ev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              const colors = ['bg-blue-400', 'bg-blush-400', 'bg-purple-400', 'bg-emerald-400']
+              return (
+                <div key={i} className="relative pl-6">
+                  <div className={`absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-forest-950 ${colors[i % colors.length]}`} />
+                  <p className="text-xs text-white/50 mb-1">{time}</p>
+                  <p className="text-sm font-semibold text-white/80">{ev.crop_name} scanned</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center flex-1 text-center py-6 opacity-50">
+          <Clock className="mb-2" size={24} />
+          <p className="text-sm">No recent activity.</p>
+        </div>
+      )}
     </div>
   )
 }

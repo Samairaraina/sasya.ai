@@ -1,6 +1,6 @@
 import { Sparkles, Sprout, Droplets, ArrowRight } from 'lucide-react'
 
-export function AIRecommendationsWidget() {
+export function AIRecommendationsWidget({ advice }: { advice?: string[] }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-[20px] border border-blush-500/20 bg-gradient-to-br from-blush-500/10 to-transparent p-6 backdrop-blur">
       <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-blush-400 uppercase tracking-wider">
@@ -8,50 +8,58 @@ export function AIRecommendationsWidget() {
         Today's AI Advice
       </div>
       
-      <ul className="flex flex-col gap-3 flex-1 text-sm text-white/80">
-        <li className="flex items-start gap-2">
-          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blush-400 shrink-0" />
-          <p>Spray fungicide tomorrow morning. Rain expected in 2 days.</p>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blush-400 shrink-0" />
-          <p>Nitrogen levels appear low. Inspect Field #3.</p>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blush-400 shrink-0" />
-          <p>Recommended irrigation: 6 PM today.</p>
-        </li>
-      </ul>
+      {!advice ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-blush-400/50">
+          Generating insights...
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-3 flex-1 text-sm text-white/80">
+          {advice.map((item, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blush-400 shrink-0" />
+              <p>{item}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
 
-export function YieldPredictionWidget() {
+export function YieldPredictionWidget({ yieldEstimate }: { yieldEstimate?: { amount: string, confidence: number, revenue: string } }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-6 backdrop-blur relative">
       <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" />
       
       <div className="mb-6 flex items-center gap-2 text-sm font-semibold text-white/50 uppercase tracking-wider">
         <Sprout size={16} className="text-emerald-400" />
-        Yield Prediction
+        AI Yield Prediction
       </div>
       
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <p className="text-xs text-white/50 mb-1">Expected Harvest (Rice)</p>
-          <p className="stat-font text-3xl font-bold text-white">4.2 <span className="text-lg text-white/40">Tons</span></p>
+      {!yieldEstimate ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-white/50">
+          Calculating yield...
         </div>
-        <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-300">
-          92% Confidence
-        </div>
-      </div>
-      
-      <div className="mt-auto pt-4 border-t border-white/5">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-white/60">Estimated Revenue</span>
-          <span className="font-semibold text-emerald-400">₹2.4L</span>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-end justify-between mb-2">
+            <div>
+              <p className="text-xs text-white/50 mb-1">Expected Harvest</p>
+              <p className="stat-font text-3xl font-bold text-white">{yieldEstimate.amount}</p>
+            </div>
+            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-300">
+              {yieldEstimate.confidence}% Confidence
+            </div>
+          </div>
+          
+          <div className="mt-auto pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white/60">Estimated Revenue</span>
+              <span className="font-semibold text-emerald-400">{yieldEstimate.revenue}</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

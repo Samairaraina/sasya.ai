@@ -12,10 +12,6 @@ const financeData = [
   { name: 'Jul', income: 3490, expense: 4300 },
 ]
 
-const diseaseData = [
-  { name: 'Healthy', value: 72 },
-  { name: 'Diseased', value: 28 },
-]
 const PIE_COLORS = ['#34d399', '#f87171']
 
 const diseaseTrendData = [
@@ -89,7 +85,18 @@ export function FinanceAnalyticsWidget({ totalIncome, totalExpense }: { totalInc
   )
 }
 
-export function DiseaseAnalyticsWidget() {
+export function DiseaseAnalyticsWidget({ reports = [] }: { reports?: any[] }) {
+  const healthyCount = reports.filter(r => (r.disease_name || '').toLowerCase() === 'healthy').length
+  const diseasedCount = reports.length - healthyCount
+  const total = reports.length || 1 // prevent div by zero
+  const healthyPct = Math.round((healthyCount / total) * 100)
+  const diseasedPct = Math.round((diseasedCount / total) * 100)
+
+  const diseaseData = [
+    { name: 'Healthy', value: healthyCount || 1 }, // Give some value to render pie
+    { name: 'Diseased', value: diseasedCount },
+  ]
+
   return (
     <div className="flex flex-col overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-6 lg:col-span-1 backdrop-blur">
       <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white/50 uppercase tracking-wider">
@@ -114,11 +121,11 @@ export function DiseaseAnalyticsWidget() {
           <div className="w-1/2 flex flex-col gap-3 justify-center">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-400" /><span className="text-sm text-white/70">Healthy</span></div>
-              <span className="font-bold">72%</span>
+              <span className="font-bold">{reports.length === 0 ? 0 : healthyPct}%</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-400" /><span className="text-sm text-white/70">Diseased</span></div>
-              <span className="font-bold">28%</span>
+              <span className="font-bold">{reports.length === 0 ? 0 : diseasedPct}%</span>
             </div>
           </div>
         </div>
