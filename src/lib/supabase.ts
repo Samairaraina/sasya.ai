@@ -70,6 +70,104 @@ export type Database = {
           size_acres: number | null
           created_at: string
         }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          location?: string | null
+          size_acres?: number | null
+          created_at?: string
+        }
+      }
+      crops: {
+        Row: {
+          id: string
+          user_id: string
+          farm_id: string
+          name: string
+          variety: string | null
+          planted_at: string | null
+          health: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          farm_id: string
+          name: string
+          variety?: string | null
+          planted_at?: string | null
+          health?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          variety?: string | null
+          planted_at?: string | null
+          health?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+      }
+      crop_expenses: {
+        Row: {
+          id: string
+          crop_id: string
+          user_id: string
+          category: 'Seeds' | 'Fertilizer' | 'Labour' | 'Water' | 'Pesticides' | 'Machinery' | 'Transport' | 'Other'
+          amount: number
+          expense_date: string
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          crop_id: string
+          user_id: string
+          category: 'Seeds' | 'Fertilizer' | 'Labour' | 'Water' | 'Pesticides' | 'Machinery' | 'Transport' | 'Other'
+          amount: number
+          expense_date?: string
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          category?: 'Seeds' | 'Fertilizer' | 'Labour' | 'Water' | 'Pesticides' | 'Machinery' | 'Transport' | 'Other'
+          amount?: number
+          expense_date?: string
+          note?: string | null
+        }
+      }
+      crop_income: {
+        Row: {
+          id: string
+          crop_id: string
+          user_id: string
+          amount: number
+          income_date: string
+          source: string | null
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          crop_id: string
+          user_id: string
+          amount: number
+          income_date?: string
+          source?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          amount?: number
+          income_date?: string
+          source?: string | null
+          note?: string | null
+        }
       }
       weather: {
         Row: {

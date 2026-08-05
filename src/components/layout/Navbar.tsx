@@ -11,6 +11,7 @@ const links = [
   { label: 'Features', to: '/features' },
   { label: 'Solutions', to: '/solutions' },
   { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Expenses', to: '/expenses' },
   { label: 'Pricing', to: '/pricing' },
   { label: 'Resources', to: '/resources' },
   { label: 'About', to: '/about' },

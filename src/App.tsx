@@ -15,6 +15,7 @@ const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage').then((m) => ({ default: m.FeaturesPage })))
 const SolutionsPage = lazy(() => import('./pages/SolutionsPage').then((m) => ({ default: m.SolutionsPage })))
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const ExpensesPage = lazy(() => import('./pages/ExpensesPage').then((m) => ({ default: m.ExpensesPage })))
 const PricingPage = lazy(() => import('./pages/PricingPage').then((m) => ({ default: m.PricingPage })))
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })))
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })))
@@ -29,6 +30,7 @@ function AnimatedRoutes() {
         <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
         <Route path="/solutions" element={<PageTransition><SolutionsPage /></PageTransition>} />
         <Route path="/dashboard" element={<PageTransition><DashboardPage /></PageTransition>} />
+        <Route path="/expenses" element={<PageTransition><ExpensesPage /></PageTransition>} />
         <Route path="/pricing" element={<PageTransition><PricingPage /></PageTransition>} />
         <Route path="/resources" element={<PageTransition><ResourcesPage /></PageTransition>} />
         <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />

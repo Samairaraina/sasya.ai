@@ -31,6 +31,8 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "schemes_public_read"       ON public.government_schemes;
   DROP POLICY IF EXISTS "notifications_own"         ON public.notifications;
   DROP POLICY IF EXISTS "feedback_own"              ON public.feedback;
+  DROP POLICY IF EXISTS "crop_expenses_own"         ON public.crop_expenses;
+  DROP POLICY IF EXISTS "crop_income_own"           ON public.crop_income;
 EXCEPTION WHEN undefined_table THEN null;
 END $$;
 
@@ -183,6 +185,34 @@ CREATE TABLE IF NOT EXISTS public.feedback (
 );
 
 -- ============================================================
+-- CROP EXPENSES (crop-wise cost tracking)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.crop_expenses (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  crop_id     UUID NOT NULL REFERENCES public.crops(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  category    TEXT NOT NULL CHECK (category IN ('Seeds','Fertilizer','Labour','Water','Pesticides','Machinery','Transport','Other')),
+  amount      FLOAT NOT NULL CHECK (amount >= 0),
+  expense_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  note        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- CROP INCOME (revenue per crop — sales / harvest value)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.crop_income (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  crop_id     UUID NOT NULL REFERENCES public.crops(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  amount      FLOAT NOT NULL CHECK (amount >= 0),
+  income_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  source      TEXT,
+  note        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================================
 ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
@@ -195,6 +225,8 @@ ALTER TABLE public.market_prices      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.government_schemes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.crop_expenses      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.crop_income        ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- ROW LEVEL SECURITY POLICIES
@@ -243,6 +275,14 @@ CREATE POLICY "notifications_own" ON public.notifications
 
 -- Feedback
 CREATE POLICY "feedback_own" ON public.feedback
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Crop Expenses (user_id on the row — simple and unambiguous)
+CREATE POLICY "crop_expenses_own" ON public.crop_expenses
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Crop Income (user_id on the row — simple and unambiguous)
+CREATE POLICY "crop_income_own" ON public.crop_income
   FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================

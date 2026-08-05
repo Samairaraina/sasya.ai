@@ -13,6 +13,7 @@ import {
   Wheat,
 } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { SectionHeading, EASE } from '../../lib/animations'
 import { GlowCard } from '../ui/Tilt'
 
@@ -109,6 +110,7 @@ const features = [
     desc: 'Crop-wise cost sheets and profit estimates. Know exactly what every acre earns.',
     color: '#3DDC97',
     gradient: 'from-emerald-400/25 to-transparent',
+    to: '/expenses',
   },
   {
     icon: Users,
@@ -159,15 +161,31 @@ export function Features() {
                   </span>
                   <h3 className="mt-5 font-display text-lg font-bold">{f.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-white/55">{f.desc}</p>
-                  <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold transition-colors duration-300" style={{ color: f.color }}>
-                    Explore
-                    <motion.span
-                      animate={{ x: [0, 4, 0] }}
-                      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                  {'to' in f && f.to ? (
+                    <Link
+                      to={f.to}
+                      className="mt-5 inline-flex items-center gap-1 text-sm font-semibold transition-colors duration-300"
+                      style={{ color: f.color }}
                     >
-                      →
-                    </motion.span>
-                  </span>
+                      Explore
+                      <motion.span
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        →
+                      </motion.span>
+                    </Link>
+                  ) : (
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold transition-colors duration-300" style={{ color: f.color }}>
+                      Explore
+                      <motion.span
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        →
+                      </motion.span>
+                    </span>
+                  )}
                 </div>
               </GlowCard>
             </motion.div>
