@@ -195,6 +195,10 @@ export type Database = {
           title: string
           description: string
           eligibility: string
+          category: string | null
+          pros: string | null
+          cons: string | null
+          min_acres: number | null
           link: string | null
         }
       }

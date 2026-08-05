@@ -75,6 +75,7 @@ const features = [
     desc: 'Never miss a subsidy again. We match you to the schemes your farm qualifies for.',
     color: '#FFF2A6',
     gradient: 'from-butter/25 to-transparent',
+    to: '/schemes',
   },
   {
     icon: CalendarCheck,

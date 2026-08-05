@@ -159,6 +159,12 @@ CREATE TABLE IF NOT EXISTS public.government_schemes (
   link        TEXT
 );
 
+-- v4 columns (idempotent on existing tables)
+ALTER TABLE public.government_schemes ADD COLUMN IF NOT EXISTS category  TEXT;
+ALTER TABLE public.government_schemes ADD COLUMN IF NOT EXISTS pros       TEXT;
+ALTER TABLE public.government_schemes ADD COLUMN IF NOT EXISTS cons       TEXT;
+ALTER TABLE public.government_schemes ADD COLUMN IF NOT EXISTS min_acres  FLOAT;
+
 -- ============================================================
 -- NOTIFICATIONS
 -- ============================================================
@@ -302,23 +308,81 @@ INSERT INTO public.market_prices (crop, market, state, price) VALUES
   ('Onion',  'APMC Nashik',  'Maharashtra', 1500)
 ON CONFLICT (crop, market, state) DO NOTHING;
 
-INSERT INTO public.government_schemes (title, description, eligibility, link) VALUES
+-- Government schemes (delete-then-insert keeps re-runs idempotent)
+DELETE FROM public.government_schemes
+  WHERE title IN ('PM-KISAN','PM Fasal Bima Yojana','Kisan Credit Card',
+                  'PM-KUSUM','Soil Health Card','PMKSY - Micro Irrigation',
+                  'PM-KMY Pension');
+INSERT INTO public.government_schemes
+  (title, description, eligibility, category, pros, cons, min_acres, link) VALUES
   (
     'PM-KISAN',
     'Income support of ₹6,000 per year to all landholding farmer families.',
     'All landholding farmers'' families with cultivable land.',
+    'Income Support',
+    'Direct bank transfer · ₹6,000/yr helps small farmers · No loan or repayment',
+    'Only landholding farmers · ~₹500/month is modest · Needs updated Aadhaar/bank linkage',
+    0.1,
     'https://pmkisan.gov.in'
   ),
   (
     'PM Fasal Bima Yojana',
     'Crop insurance to provide financial support to farmers suffering crop loss/damage.',
     'All farmers growing notified crops in notified areas.',
+    'Insurance',
+    'Covers natural calamities & pests · Low premium (2% kharif, 1.5% rabi) · Paperless claims',
+    'Only notified crops/areas · Claims can take time · Self-reported loss needs proof photos',
+    0.1,
     'https://pmfby.gov.in'
   ),
   (
     'Kisan Credit Card',
     'Provides adequate and timely credit support to farmers for their agricultural operations.',
     'Farmers, sharecroppers, oral lessees, and self-help groups.',
+    'Credit & Finance',
+    'Low interest ~4% with prompt repayment · Covers inputs, equipment, consumption · Flexible withdrawals',
+    'Must repay on time or interest rises · Requires KYC & land documents · Credit limit depends on records',
+    0.1,
     'https://www.nabard.org/kisan-credit-card.aspx'
+  ),
+  (
+    'PM-KUSUM',
+    'Subsidised solar water pumps (up to 60-80%) plus income from surplus solar power.',
+    'Farmers with irrigation-capable land, especially off-grid areas.',
+    'Energy & Water',
+    'Cuts electricity/diesel cost · 60-80% subsidy · Sell surplus power to grid',
+    'High upfront contribution · Needs clear land/roof · Waitlists in some states',
+    0.5,
+    'https://pmkusum.mnre.gov.in'
+  ),
+  (
+    'Soil Health Card',
+    'Free soil testing with crop-wise fertiliser recommendations every 2 years.',
+    'Any farmer can request a test from local soil testing lab.',
+    'Soil & Inputs',
+    'Free test · Tailored NPK plan reduces input cost · Improves yields',
+    'Results take weeks · Sample must be correctly drawn · Recommendations need following up',
+    0,
+    'https://www.soilhealth.dac.gov.in'
+  ),
+  (
+    'PMKSY - Micro Irrigation',
+    'Subsidy (up to 55%) for drip and sprinkler irrigation systems to save water.',
+    'Farmers with irrigation projects; small & marginal farmers get higher subsidy.',
+    'Energy & Water',
+    'Saves 30-60% water · 55% subsidy · Higher yields & crop diversification',
+    'State budget dependent · Needs matching contribution · Drip install cost still notable',
+    0.2,
+    'https://pmksy.gov.in'
+  ),
+  (
+    'PM-KMY Pension',
+    'Pension of ₹3,000/month for eligible small & marginal farmers after age 60.',
+    'Small & marginal farmers (up to 2 ha) aged 18-40.',
+    'Income Support',
+    '₹3,000/month pension · Small monthly contribution (₹55-200) · Lifelong after 60',
+    'Only up to 2 ha · Must contribute monthly · Payout is modest',
+    0.1,
+    'https://maandhan.in'
   )
 ON CONFLICT DO NOTHING;
