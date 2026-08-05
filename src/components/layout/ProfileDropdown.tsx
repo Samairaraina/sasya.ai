@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
+import { LANGUAGES, type LangCode } from '../../lib/i18n'
+import { useLang } from '../../lib/lang'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -18,17 +20,6 @@ interface Profile {
   location: string | null
   profile_image: string | null
 }
-
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिंदी (Hindi)' },
-  { code: 'mr', label: 'मराठी (Marathi)' },
-  { code: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
-  { code: 'ta', label: 'தமிழ் (Tamil)' },
-  { code: 'te', label: 'తెలుగు (Telugu)' },
-  { code: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
-  { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
-]
 
 const ROLES = ['FARMER', 'EXPERT', 'ADMIN']
 
@@ -57,6 +48,7 @@ function Avatar({ src, name, size = 36 }: { src?: string | null; name?: string |
 // ─── Profile Modal ────────────────────────────────────────────────────────────
 function ProfileModal({ onClose }: { onClose: () => void }) {
   const { user, signOut } = useAuth()
+  const { t, setLang } = useLang()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -150,7 +142,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={() => fileRef.current?.click()}
                 className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border-2 border-forest-900 bg-blush-500 text-white shadow transition hover:bg-blush-400"
-                title="Change photo"
+                title={t('profile.changePhoto')}
               >
                 <Camera size={13} />
               </button>
@@ -165,7 +157,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
 
             <div>
               <p className="font-display text-xl font-bold">
-                {profile?.name ?? 'Your Profile'}
+                {profile?.name ?? t('profile.title')}
               </p>
               <p className="mt-0.5 text-sm text-white/50">{user?.email}</p>
               <span className="mt-2 inline-block rounded-full bg-emerald-400/15 px-3 py-0.5 text-[11px] font-semibold text-emerald-300">
@@ -188,7 +180,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               {/* Name */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                  <User size={11} /> Full Name
+                  <User size={11} /> {t('profile.name')}
                 </label>
                 <input
                   value={profile.name ?? ''}
@@ -201,7 +193,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               {/* Phone */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                  <Phone size={11} /> Phone Number
+                  <Phone size={11} /> {t('profile.phone')}
                 </label>
                 <input
                   value={profile.phone ?? ''}
@@ -214,7 +206,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               {/* Location */}
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                  <MapPin size={11} /> Location / Village
+                  <MapPin size={11} /> {t('profile.location')}
                 </label>
                 <input
                   value={profile.location ?? ''}
@@ -228,21 +220,26 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                    <Globe size={11} /> Language
+                    <Globe size={11} /> {t('profile.language')}
                   </label>
                   <select
                     value={profile.language ?? 'en'}
-                    onChange={(e) => field('language', e.target.value)}
+                    onChange={(e) => {
+                      field('language', e.target.value)
+                      setLang(e.target.value as LangCode)
+                    }}
                     className="w-full rounded-xl border border-white/10 bg-forest-900 px-4 py-3 text-sm text-white outline-none transition focus:border-blush-400/60"
                   >
                     {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.label}</option>
+                      <option key={l.code} value={l.code} disabled={!l.available}>
+                        {l.nativeLabel} {!l.available && '(Coming Soon)'}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/50 flex items-center gap-1.5">
-                    <User size={11} /> Role
+                    <User size={11} /> {t('profile.role')}
                   </label>
                   <select
                     value={profile.role ?? 'FARMER'}
@@ -259,7 +256,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
               {/* Email (read-only) */}
               <div>
                 <label className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/30">
-                  Email (cannot change)
+                  {t('profile.email')}
                 </label>
                 <input
                   value={profile.email}
@@ -277,7 +274,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
             onClick={signOut}
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white/50 transition hover:bg-white/[0.06] hover:text-white"
           >
-            <LogOut size={14} /> Sign out
+            <LogOut size={14} /> {t('nav.signOut')}
           </button>
 
           <button
@@ -286,11 +283,11 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blush-500 to-blush-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition hover:opacity-90 disabled:opacity-50"
           >
             {saved ? (
-              <><Check size={14} /> Saved!</>
+              <><Check size={14} /> {t('profile.saved')}</>
             ) : saving ? (
-              'Saving…'
+              t('common.loading')
             ) : (
-              <><Save size={14} /> Save Profile</>
+              <><Save size={14} /> {t('profile.save')}</>
             )}
           </button>
         </div>
@@ -302,6 +299,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
 // ─── Profile Dropdown (in navbar) ─────────────────────────────────────────────
 export function ProfileDropdown() {
   const { user } = useAuth()
+  const { t } = useLang()
   const [open, setOpen] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [profileName, setProfileName] = useState<string | null>(null)
@@ -373,7 +371,7 @@ export function ProfileDropdown() {
                 className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-white/70 transition hover:bg-white/[0.07] hover:text-white"
               >
                 <User size={14} className="text-blush-400" />
-                Edit Profile
+                {t('profile.edit')}
               </button>
             </div>
           </motion.div>

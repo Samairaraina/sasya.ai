@@ -7,6 +7,7 @@ import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
 import { AuthGate } from './components/layout/AuthGate'
 import { AuthProvider } from './lib/auth'
+import { LangProvider } from './lib/lang'
 import { ChatWidget } from './components/sections/ChatWidget'
 import { ScrollToTop } from './components/layout/ScrollToTop'
 import { PageTransition } from './components/layout/PageShell'
@@ -80,23 +81,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
-          <AuthGate>
-            <div className="noise" />
-            <Preloader onDone={() => setLoaded(true)} />
-            {loaded && (
-              <Suspense fallback={null}>
-                <ScrollToTop />
-                <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
-                <main>
-                  <AnimatedRoutes />
-                </main>
-                <Footer />
-                <ChatWidget />
-              </Suspense>
-            )}
-          </AuthGate>
-        </div>
+        <LangProvider>
+          <div className="relative min-h-screen bg-forest-900 text-white transition-colors duration-500 dark:bg-[#0a1f1d]">
+            <AuthGate>
+              <div className="noise" />
+              <Preloader onDone={() => setLoaded(true)} />
+              {loaded && (
+                <Suspense fallback={null}>
+                  <ScrollToTop />
+                  <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
+                  <main>
+                    <AnimatedRoutes />
+                  </main>
+                  <Footer />
+                  <ChatWidget />
+                </Suspense>
+              )}
+            </AuthGate>
+          </div>
+        </LangProvider>
       </AuthProvider>
     </BrowserRouter>
   )

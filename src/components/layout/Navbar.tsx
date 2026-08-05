@@ -6,21 +6,24 @@ import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
 import { ProfileDropdown } from './ProfileDropdown'
+import { useLang } from '../../lib/lang'
+import type { TranslationKey } from '../../lib/i18n'
 
-const links = [
-  { label: 'Home', to: '/' },
-  { label: 'Features', to: '/features' },
-  { label: 'Solutions', to: '/solutions' },
-  { label: 'Dashboard', to: '/dashboard' },
-  { label: 'Expenses', to: '/expenses' },
-  { label: 'Schemes', to: '/schemes' },
-  { label: 'Pricing', to: '/pricing' },
-  { label: 'Resources', to: '/resources' },
-  { label: 'About', to: '/about' },
-  { label: 'Contact', to: '/contact' },
+const links: { tKey: TranslationKey; to: string }[] = [
+  { tKey: 'nav.home', to: '/' },
+  { tKey: 'nav.features', to: '/features' },
+  { tKey: 'nav.solutions', to: '/solutions' },
+  { tKey: 'nav.dashboard', to: '/dashboard' },
+  { tKey: 'nav.expenses', to: '/expenses' },
+  { tKey: 'nav.schemes', to: '/schemes' },
+  { tKey: 'nav.pricing', to: '/pricing' },
+  { tKey: 'nav.resources', to: '/resources' },
+  { tKey: 'nav.about', to: '/about' },
+  { tKey: 'nav.contact', to: '/contact' },
 ]
 
 export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => void }) {
+  const { t } = useLang()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const { user, signOut } = useAuth()
@@ -85,7 +88,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
               >
                 {({ isActive }) => (
                   <>
-                    {l.label}
+                    {t(l.tKey)}
                     <span
                       className={`absolute inset-x-3.5 -bottom-0.5 h-px origin-left bg-gradient-to-r from-blush-400 to-blush-500 transition-transform duration-300 ${
                         isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
@@ -124,14 +127,14 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                 className="hidden cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-white/70 transition-colors hover:text-white sm:flex"
               >
                 <LogIn size={15} />
-                Login
+                {t('nav.login')}
               </Link>
             )}
             <Link
               to="/pricing"
               className="btn-primary hidden rounded-full px-5 py-2 text-[13px] font-semibold sm:inline-flex"
             >
-              Get Started
+              {t('nav.getStarted')}
             </Link>
             <button
               onClick={() => setOpen(!open)}
@@ -170,7 +173,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                       }`
                     }
                   >
-                    {l.label}
+                    {t(l.tKey)}
                   </NavLink>
                 </motion.div>
               ))}
@@ -184,7 +187,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                   onClick={() => setOpen(false)}
                   className="btn-primary mt-6 inline-block rounded-full px-8 py-3.5 font-semibold"
                 >
-                  Get Started
+                  {t('nav.getStarted')}
                 </Link>
               </motion.div>
               <motion.div
@@ -201,7 +204,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                       onClick={handleSignOut}
                       className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
                     >
-                      Sign out
+                      {t('nav.signOut')}
                     </button>
                   </>
                 ) : (
@@ -211,7 +214,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                     className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
                   >
                     <LogIn size={15} />
-                    Login
+                    {t('nav.login')}
                   </Link>
                 )}
               </motion.div>
