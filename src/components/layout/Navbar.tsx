@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
-import { LogIn, LogOut, Menu, Moon, Sun, X } from 'lucide-react'
+import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
+import { ProfileDropdown } from './ProfileDropdown'
 
 const links = [
   { label: 'Home', to: '/' },
@@ -116,19 +117,7 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
               </AnimatePresence>
             </button>
             {userEmail ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden max-w-[160px] truncate text-[13px] font-medium text-white/70 md:block">
-                  {userEmail}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  aria-label="Sign out"
-                  title="Sign out"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition-all hover:bg-white/10 hover:text-white"
-                >
-                  <LogOut size={15} />
-                </button>
-              </div>
+              <ProfileDropdown />
             ) : (
               <Link
                 to="/"
@@ -212,7 +201,6 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
                       onClick={handleSignOut}
                       className="mt-1 inline-flex cursor-pointer items-center gap-1.5 rounded-full px-6 py-2.5 text-sm font-medium text-white/70 transition-colors hover:text-white"
                     >
-                      <LogOut size={15} />
                       Sign out
                     </button>
                   </>
