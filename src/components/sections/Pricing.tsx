@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Sparkles, Zap } from 'lucide-react'
 import { SectionHeading, EASE } from '../../lib/animations'
@@ -72,8 +71,6 @@ const plans = [
 ]
 
 export function Pricing() {
-  const [yearly, setYearly] = useState(false)
-
   return (
     <section id="pricing" className="relative py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -87,28 +84,9 @@ export function Pricing() {
           subtitle="Start free. Upgrade when your farm does. Every plan pays for itself with one good decision."
         />
 
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <span className={`text-sm ${!yearly ? 'text-white' : 'text-white/50'}`}>Monthly</span>
-          <button
-            onClick={() => setYearly(!yearly)}
-            aria-label="Toggle billing period"
-            className="relative h-7 w-14 rounded-full border border-white/15 bg-white/[0.06] transition-colors"
-          >
-            <motion.span
-              className="absolute top-1 h-5 w-5 rounded-full bg-gradient-to-br from-blush-400 to-blush-500"
-              animate={{ left: yearly ? 8 : 32 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            />
-          </button>
-          <span className={`text-sm ${yearly ? 'text-white' : 'text-white/50'}`}>
-            Yearly <span className="ml-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">Save 20%</span>
-          </span>
-        </div>
-
         <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4 lg:items-stretch">
           {plans.map((p, i) => {
-            const numeric = p.price.replace(/[^0-9]/g, '')
-            const price = yearly && numeric ? Math.round(Number(numeric) * 0.8) : p.price
+            const price = p.price
             return (
               <motion.div
                 key={p.name}
@@ -134,7 +112,7 @@ export function Pricing() {
                 <p className="mt-2 text-sm text-white/55">{p.desc}</p>
                 <div className="mt-6 flex items-baseline gap-1.5">
                   <span className="stat-font text-5xl font-bold">
-                    {typeof price === 'number' ? `₹${price.toLocaleString('en-IN')}` : price}
+                    {price}
                   </span>
                   {p.period && <span className="text-sm text-white/45">{p.period}</span>}
                 </div>
