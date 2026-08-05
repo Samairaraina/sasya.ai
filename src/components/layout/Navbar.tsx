@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '../../lib/auth'
-import { LogIn, Menu, Moon, Sun, X } from 'lucide-react'
+import { LogIn, Menu, X } from 'lucide-react'
 import { Logo } from '../ui/Logo'
 import { EASE } from '../../lib/animations'
 import { ProfileDropdown } from './ProfileDropdown'
@@ -22,7 +22,7 @@ const links: { tKey: TranslationKey; to: string }[] = [
   { tKey: 'nav.contact', to: '/contact' },
 ]
 
-export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => void }) {
+export function Navbar() {
   const { t } = useLang()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -101,24 +101,6 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button
-              onClick={onToggleDark}
-              aria-label="Toggle dark mode"
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition-all hover:bg-white/10 hover:text-white"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={dark ? 'sun' : 'moon'}
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="grid place-items-center"
-                >
-                  {dark ? <Sun size={16} /> : <Moon size={16} />}
-                </motion.span>
-              </AnimatePresence>
-            </button>
             {userEmail ? (
               <ProfileDropdown />
             ) : (

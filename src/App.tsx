@@ -46,11 +46,6 @@ function AnimatedRoutes() {
 
 export default function App() {
   const [loaded, setLoaded] = useState(false)
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
-
   useEffect(() => {
     const lenis = new Lenis({
       lerp: 0.09,
@@ -64,10 +59,6 @@ export default function App() {
     requestAnimationFrame(raf)
     return () => lenis.destroy()
   }, [])
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
 
   useEffect(() => {
     if (!loaded) {
@@ -89,7 +80,7 @@ export default function App() {
               {loaded && (
                 <Suspense fallback={null}>
                   <ScrollToTop />
-                  <Navbar dark={dark} onToggleDark={() => setDark(!dark)} />
+                  <Navbar />
                   <main>
                     <AnimatedRoutes />
                   </main>

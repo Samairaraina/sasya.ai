@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { SectionHeading, EASE } from '../../lib/animations'
 import { extractJson, geminiVision, hasGeminiKey } from '../../lib/gemini'
+import { useAuth } from '../../lib/auth'
+import { supabase } from '../../lib/supabase'
 
 const steps = [
   { label: 'Uploading image', dur: 900 },
@@ -101,6 +103,7 @@ Return ONLY a valid JSON object with NO markdown, NO code fences, NO extra text.
 
 
 export function Scanner() {
+  const { user } = useAuth()
   const [stage, setStage] = useState<Stage>('idle')
   const [stepIdx, setStepIdx] = useState(0)
   const [preview, setPreview] = useState<string | null>(null)
@@ -137,15 +140,33 @@ export function Scanner() {
     geminiVision(dataUrl, VISION_PROMPT)
       .then((text) => {
         const parsed = extractJson<ScanResult>(text)
-        if (!parsed) setAiError(`Could not parse AI response — showing demo data`)
-        setLiveResult(parsed)
+        if (!parsed) {
+          setAiError(`Could not parse AI response — showing demo data`)
+        } else {
+          setLiveResult(parsed)
+          if (user?.id) {
+            supabase
+              .from('disease_reports')
+              .insert({
+                user_id: user.id,
+                crop_name: parsed.cropType || 'Unknown Crop',
+                disease_name: parsed.disease,
+                confidence: parsed.confidence,
+                image: dataUrl,
+                recommendation: parsed.organic || parsed.chemical || parsed.prevention || '',
+              })
+              .then(({ error }) => {
+                if (error) console.error('Failed to save scan:', error)
+              })
+          }
+        }
         setStage('done')
       })
       .catch((err: Error) => {
         setAiError(`AI error: ${err.message} — showing demo data`)
         setStage('done')
       })
-  }, [])
+  }, [user?.id])
 
   const onFile = useCallback(
     (file?: File) => {
