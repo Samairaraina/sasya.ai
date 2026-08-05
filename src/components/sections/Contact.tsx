@@ -4,10 +4,10 @@ import { CheckCircle2, Mail, MapPin, MessageSquareText, Phone } from 'lucide-rea
 import { Reveal, EASE } from '../../lib/animations'
 
 const contactInfo = [
-  { icon: Mail, label: 'Email', value: 'hello@sasya.farm' },
-  { icon: Phone, label: 'Phone', value: '+91 98xxxxxxx1' },
+  { icon: Mail, label: 'Email', value: 'samairaraina140801@gmail.com' },
+  { icon: Phone, label: 'Phone', value: '---' },
   { icon: MapPin, label: 'Office', value: 'Agritech Hub, Bengaluru, India' },
-  { icon: MessageSquareText, label: 'Support', value: 'WhatsApp · 9 languages' },
+  { icon: MessageSquareText, label: 'Support', value: 'WhatsApp (Hindi and English)' },
 ]
 
 export function Contact() {
