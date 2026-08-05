@@ -6,7 +6,7 @@ import { Reveal, EASE } from '../../lib/animations'
 const contactInfo = [
   { icon: Mail, label: 'Email', value: 'samairaraina140801@gmail.com' },
   { icon: Phone, label: 'Phone', value: '---' },
-  { icon: MapPin, label: 'Office', value: 'Agritech Hub, Bengaluru, India' },
+  { icon: MapPin, label: 'Office', value: 'Online, India' },
   { icon: MessageSquareText, label: 'Support', value: 'WhatsApp (Hindi and English)' },
 ]
 
