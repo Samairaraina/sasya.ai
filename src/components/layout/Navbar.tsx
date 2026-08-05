@@ -40,11 +40,24 @@ export function Navbar({ dark, onToggleDark }: { dark: boolean; onToggleDark: ()
 
   return (
     <>
+      <motion.div
+        initial={{ y: -36, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
+        className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-2 border-b border-blush-500/20 bg-gradient-to-r from-forest-950 via-forest-900 to-forest-950 px-4 text-[11px] font-medium tracking-wide text-blush-300 backdrop-blur"
+      >
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blush-400 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-blush-500" />
+        </span>
+        Sasya is under development — some features are placeholders and may change.
+      </motion.div>
+
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.2, ease: EASE }}
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+        className={`fixed inset-x-0 top-9 z-50 transition-all duration-500 ${
           scrolled ? 'py-2.5' : 'py-4'
         }`}
       >
