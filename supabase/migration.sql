@@ -31,8 +31,6 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "schemes_public_read"       ON public.government_schemes;
   DROP POLICY IF EXISTS "notifications_own"         ON public.notifications;
   DROP POLICY IF EXISTS "feedback_own"              ON public.feedback;
-  DROP POLICY IF EXISTS "crop_expenses_own"         ON public.crop_expenses;
-  DROP POLICY IF EXISTS "crop_income_own"           ON public.crop_income;
 EXCEPTION WHEN undefined_table THEN null;
 END $$;
 
@@ -211,6 +209,14 @@ CREATE TABLE IF NOT EXISTS public.crop_income (
   note        TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Drop expense/income policies in their own block AFTER the tables exist,
+-- so a missing table never rolls back the other policy drops above.
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "crop_expenses_own" ON public.crop_expenses;
+  DROP POLICY IF EXISTS "crop_income_own"   ON public.crop_income;
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
 -- ============================================================
 -- ENABLE ROW LEVEL SECURITY
