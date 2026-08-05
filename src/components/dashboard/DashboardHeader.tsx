@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ScanLine, IndianRupee, ClipboardList, Sparkles, Landmark, TrendingUp, Sun, CheckCircle2 } from 'lucide-react'
+import { ScanLine, IndianRupee, ClipboardList, Sparkles, Landmark, TrendingUp, Sun, CheckCircle2, Edit2 } from 'lucide-react'
 
 export function DashboardGreeting({ name, pendingTasks = 2, weatherSuitable = true }: { name: string, pendingTasks?: number, weatherSuitable?: boolean }) {
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
@@ -58,22 +59,53 @@ export function QuickActions() {
 }
 
 export function FarmStatsBar() {
-  const stats = [
-    { label: 'Total Acres', value: '18', suffix: '' },
-    { label: 'Fields', value: '14', suffix: '' },
-    { label: 'Active Crops', value: '6', suffix: '' },
-    { label: 'Tasks Today', value: '5', suffix: '' },
-    { label: 'AI Scans', value: '82', suffix: '' },
+  const [stats, setStats] = useState({
+    acres: '18',
+    fields: '14',
+    crops: '6',
+    tasks: '5',
+    scans: '82'
+  })
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sasya_farm_stats')
+    if (saved) {
+      try { setStats(JSON.parse(saved)) } catch (e) {}
+    }
+  }, [])
+
+  const handleChange = (key: keyof typeof stats, val: string) => {
+    // Only allow numbers
+    if (val !== '' && !/^\d+$/.test(val)) return
+    const newStats = { ...stats, [key]: val }
+    setStats(newStats)
+    localStorage.setItem('sasya_farm_stats', JSON.stringify(newStats))
+  }
+
+  const statItems = [
+    { label: 'Total Acres', key: 'acres' as keyof typeof stats },
+    { label: 'Fields', key: 'fields' as keyof typeof stats },
+    { label: 'Active Crops', key: 'crops' as keyof typeof stats },
+    { label: 'Tasks Today', key: 'tasks' as keyof typeof stats },
+    { label: 'AI Scans', key: 'scans' as keyof typeof stats },
   ]
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-      {stats.map((stat, i) => (
-        <div key={stat.label} className="rounded-[20px] border border-white/10 bg-white/[0.02] p-5 backdrop-blur transition-colors hover:bg-white/[0.04]">
+      {statItems.map((stat) => (
+        <div key={stat.label} className="group relative overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.02] p-5 backdrop-blur transition-colors hover:bg-white/[0.04]">
           <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">{stat.label}</p>
-          <p className="mt-2 stat-font text-3xl font-bold text-white">
-            {stat.value}<span className="text-lg text-white/40">{stat.suffix}</span>
-          </p>
+          <div className="mt-2 flex items-center relative">
+            <input 
+              type="text" 
+              value={stats[stat.key]} 
+              onChange={(e) => handleChange(stat.key, e.target.value)}
+              className="stat-font text-3xl font-bold text-white bg-transparent outline-none w-full border-b border-transparent focus:border-white/20 transition-colors"
+            />
+          </div>
+          <div className="absolute right-4 top-4 text-white/20 opacity-0 transition-opacity group-hover:opacity-100">
+            <Edit2 size={12} />
+          </div>
         </div>
       ))}
     </div>
