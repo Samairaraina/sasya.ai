@@ -3,17 +3,17 @@ import { motion } from 'framer-motion'
 import { SectionHeading, EASE } from '../../lib/animations'
 import { supabase, type Database } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
-import { Activity, Clock, Image as ImageIcon, CloudSun, Droplets, Wind, Wallet, TrendingUp, TrendingDown, CalendarClock, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Activity, Clock, Image as ImageIcon, CloudSun, Droplets, Wind, Wallet, TrendingUp, TrendingDown, CalendarClock, ArrowRight, CheckCircle2, Plus } from 'lucide-react'
 import { fetchCurrent, CurrentWeather, fetchForecast, ForecastDay, getBestSprayWindow } from '../../lib/weather'
 
 type DiseaseReport = Database['public']['Tables']['disease_reports']['Row']
 
-const STATIC_REMINDERS = [
-  { id: 1, task: 'Apply Nitrogen Fertilizer', date: 'Today', status: 'pending' },
-  { id: 2, task: 'Check Soil Moisture', date: 'Tomorrow', status: 'pending' },
-  { id: 3, task: 'Schedule Harvesting for Wheat', date: 'In 3 days', status: 'upcoming' },
-  { id: 4, task: 'Buy Seeds for next season', date: 'Next Week', status: 'upcoming' },
-]
+interface Task {
+  id: string
+  task: string
+  date: string
+  status: 'pending' | 'completed'
+}
 
 export function FarmDashboard() {
   const { user } = useAuth()
@@ -25,8 +25,53 @@ export function FarmDashboard() {
   const [totalIncome, setTotalIncome] = useState(0)
   const [totalExpense, setTotalExpense] = useState(0)
   
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [newTaskText, setNewTaskText] = useState('')
+  const [isAddingTask, setIsAddingTask] = useState(false)
+  
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Load local tasks
+    const savedTasks = localStorage.getItem('sasya_tasks')
+    if (savedTasks) {
+      try { setTasks(JSON.parse(savedTasks)) } catch (e) {}
+    }
+  }, [])
+
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newTaskText.trim()) return
+    const newTask: Task = {
+      id: Date.now().toString(),
+      task: newTaskText,
+      date: new Date().toLocaleDateString(),
+      status: 'pending'
+    }
+    const updated = [newTask, ...tasks]
+    setTasks(updated)
+    localStorage.setItem('sasya_tasks', JSON.stringify(updated))
+    setNewTaskText('')
+    setIsAddingTask(false)
+  }
+
+  const toggleTaskStatus = (id: string) => {
+    const updated = tasks.map(t => {
+      if (t.id === id) {
+        return { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } as Task
+      }
+      return t
+    })
+    setTasks(updated)
+    localStorage.setItem('sasya_tasks', JSON.stringify(updated))
+  }
+
+  const deleteTask = (id: string) => {
+    const updated = tasks.filter(t => t.id !== id)
+    setTasks(updated)
+    localStorage.setItem('sasya_tasks', JSON.stringify(updated))
+  }
 
   useEffect(() => {
     if (!user) {
@@ -185,20 +230,51 @@ export function FarmDashboard() {
                   <CalendarClock size={16} className="text-blush-400" />
                   Upcoming Tasks
                 </div>
-              </div>
-              <div className="flex-1 flex flex-col gap-3">
-                {STATIC_REMINDERS.map(reminder => (
-                  <div key={reminder.id} className="group flex items-start gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 transition-colors hover:bg-white/[0.06]">
-                    <CheckCircle2 size={18} className="mt-0.5 text-white/20 group-hover:text-emerald-400 transition-colors cursor-pointer" />
-                    <div>
-                      <p className="text-sm font-medium text-white/90">{reminder.task}</p>
-                      <p className="text-xs text-blush-300 mt-1">{reminder.date}</p>
-                    </div>
-                  </div>
-                ))}
-                <button className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-white/[0.05] py-3 text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.1] hover:text-white">
-                  View Full Calendar <ArrowRight size={14} />
+                <button 
+                  onClick={() => setIsAddingTask(!isAddingTask)}
+                  className="rounded-full bg-white/10 p-1.5 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
+                >
+                  <Plus size={16} />
                 </button>
+              </div>
+              
+              <div className="flex-1 flex flex-col gap-3">
+                {isAddingTask && (
+                  <form onSubmit={handleAddTask} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      autoFocus
+                      placeholder="Enter a new task..." 
+                      value={newTaskText}
+                      onChange={(e) => setNewTaskText(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder-white/40 focus:border-blush-500 focus:outline-none"
+                    />
+                    <button type="submit" className="rounded-xl bg-blush-500 px-3 py-2 text-sm font-semibold text-white">Add</button>
+                  </form>
+                )}
+
+                {tasks.length === 0 && !isAddingTask ? (
+                  <div className="flex flex-1 items-center justify-center text-center">
+                    <p className="text-sm text-white/40">No tasks added yet.<br/>Click the + button to add one.</p>
+                  </div>
+                ) : (
+                  tasks.map(task => (
+                    <div key={task.id} className={`group flex items-start justify-between gap-3 rounded-xl border border-white/[0.05] p-4 transition-colors ${task.status === 'completed' ? 'bg-white/[0.01] opacity-50' : 'bg-white/[0.02] hover:bg-white/[0.06]'}`}>
+                      <div className="flex items-start gap-3">
+                        <button onClick={() => toggleTaskStatus(task.id)}>
+                          <CheckCircle2 size={18} className={`mt-0.5 transition-colors ${task.status === 'completed' ? 'text-emerald-500' : 'text-white/20 hover:text-emerald-400'}`} />
+                        </button>
+                        <div>
+                          <p className={`text-sm font-medium ${task.status === 'completed' ? 'text-white/50 line-through' : 'text-white/90'}`}>{task.task}</p>
+                          <p className="text-xs text-blush-300/70 mt-1">{task.date}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteTask(task.id)} className="text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Plus size={16} className="rotate-45" />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
