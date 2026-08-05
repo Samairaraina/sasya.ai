@@ -54,7 +54,10 @@ async function fetchCurrent(lat: number, lon: number): Promise<CurrentWeather> {
   const res = await fetch(
     `${OWM}/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_KEY}&units=metric`,
   )
-  if (!res.ok) throw new Error('Weather fetch failed')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(`OWM ${res.status}: ${err.message ?? res.statusText}`)
+  }
   const d = await res.json()
   return {
     city: d.name,
@@ -158,10 +161,10 @@ export function Weather() {
       setCurrent(cur)
       setForecast(fore)
       setLocName(`${cur.city}, ${cur.country}`)
-      // Generate AI advice after data loads
       generateAIAdvice(cur, fore).then(setAdvice)
     } catch (e) {
-      setError('Could not load weather data.')
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      setError(`Weather error: ${msg}`)
     } finally {
       setLoading(false)
     }
@@ -169,16 +172,20 @@ export function Weather() {
 
   useEffect(() => {
     if (!WEATHER_KEY) {
-      setError('VITE_WEATHER_API_KEY not set.')
+      setError('Add VITE_WEATHER_API_KEY on Vercel to load live weather.')
       setLoading(false)
       return
     }
-    // Try geolocation first, fallback to Nashik
-    navigator.geolocation?.getCurrentPosition(
-      (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
-      ()    => loadWeather(20.0059, 73.7997), // Nashik fallback
-      { timeout: 5000 },
-    ) ?? loadWeather(20.0059, 73.7997)
+    // Try geolocation, fallback to Nashik, Maharashtra
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
+        ()    => loadWeather(20.0059, 73.7997),
+        { timeout: 6000 },
+      )
+    } else {
+      loadWeather(20.0059, 73.7997)
+    }
   }, [])
 
   const metrics = current
