@@ -4,66 +4,11 @@ import { EASE } from '../../lib/animations'
 
 function GrowingPlant() {
   return (
-    <svg width="92" height="92" viewBox="0 0 92 92" fill="none" className="overflow-visible">
-      <defs>
-        <linearGradient id="load-leaf" x1="20" y1="20" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#3DDC97" />
-          <stop offset="100%" stopColor="#F38BBC" />
-        </linearGradient>
-      </defs>
-      <motion.path
-        d="M46 86 V50"
-        stroke="url(#load-leaf)"
-        strokeWidth="4"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.4, delay: 0.2, ease: EASE }}
-      />
-      {[0, 1, 2, 3].map((i) => (
-        <motion.path
-          key={i}
-          d={
-            i % 2 === 0
-              ? 'M46 52 C38 44 34 42 26 44'
-              : 'M46 52 C54 44 58 42 66 44'
-          }
-          stroke="url(#load-leaf)"
-          strokeWidth="4"
-          strokeLinecap="round"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 + i * 0.35, ease: EASE }}
-        />
-      ))}
-      <motion.path
-        d="M46 34 C38 26 34 24 27 25"
-        stroke="#3DDC97"
-        strokeWidth="4"
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1.9, ease: EASE }}
-      />
-      <motion.path
-        d="M46 34 C54 26 58 24 65 25"
-        stroke="#F38BBC"
-        strokeWidth="4"
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 2.15, ease: EASE }}
-      />
-      <motion.circle
-        cx="60"
-        cy="52"
-        r="4"
-        fill="#FFF2A6"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 1.3, 1], opacity: [0, 1, 1] }}
-        transition={{ duration: 0.6, delay: 2.6, ease: EASE }}
-      />
-    </svg>
+    <img
+      src="/LOGO.png"
+      alt="Sasya Logo"
+      className="h-28 w-28 object-contain drop-shadow-2xl"
+    />
   )
 }
 
