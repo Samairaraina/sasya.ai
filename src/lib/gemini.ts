@@ -166,3 +166,76 @@ Return ONLY valid JSON wrapped in a codeblock matching this interface exactly. D
   }
 }
 
+// ─── Yield Prediction Generator ───────────────────────────────────────
+export interface YieldPrediction {
+  cropId: string;
+  cropName: string;
+  estimatedYieldRange: string;
+  expectedHarvestDate: string;
+  confidenceScore: number;
+  marketPriceTrend: 'Up' | 'Stable' | 'Down';
+  revenueEstimate: string;
+  keyFactors: string[];
+}
+
+export async function generateYieldPredictions(
+  crops: any[],
+  farms: any[]
+): Promise<YieldPrediction[]> {
+  if (!crops || crops.length === 0) return [];
+
+  const prompt = `
+You are an expert agricultural AI. 
+Generate a yield prediction forecast for the following crops.
+For each crop, estimate realistic values based on typical Indian farming conditions.
+
+DATA:
+Farms: ${JSON.stringify(farms)}
+Active Crops: ${JSON.stringify(crops)}
+
+REQUIREMENTS:
+Return a JSON array of objects, with each object strictly matching this interface:
+{
+  "cropId": "string (the exact id from the provided crop)",
+  "cropName": "string",
+  "estimatedYieldRange": "string (e.g., '4.2 - 4.8 Tons')",
+  "expectedHarvestDate": "string (e.g., 'Mid-October 2026')",
+  "confidenceScore": number (0-100),
+  "marketPriceTrend": "Up" | "Stable" | "Down",
+  "revenueEstimate": "string (e.g., '₹2.4L - ₹2.8L')",
+  "keyFactors": ["string", "string", "string"] (3 actionable factors affecting the yield)
+}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON wrapped in a codeblock.
+\`\`\`json
+[
+  { ... }
+]
+\`\`\`
+`
+
+  try {
+    const res = await fetch(BASE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          responseMimeType: 'application/json',
+        },
+      }),
+    })
+
+    if (!res.ok) throw new Error('API Error')
+    const json = await res.json()
+    const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    
+    return extractJson<YieldPrediction[]>(content) || JSON.parse(content) || []
+  } catch (err) {
+    console.error('Yield prediction generation failed:', err)
+    return []
+  }
+}
+

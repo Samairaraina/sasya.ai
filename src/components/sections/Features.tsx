@@ -61,6 +61,7 @@ const features = [
     desc: 'ML models forecast your harvest weeks ahead — so you can plan markets, labour and logistics.',
     color: '#F9B4D0',
     gradient: 'from-blush-400/25 to-transparent',
+    to: '/yield-prediction',
   },
   {
     icon: Map,
