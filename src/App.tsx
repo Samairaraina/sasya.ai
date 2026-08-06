@@ -23,6 +23,7 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ 
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })))
 const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })))
 const YieldPredictionPage = lazy(() => import('./pages/YieldPredictionPage').then((m) => ({ default: m.YieldPredictionPage })))
+const CropCalendarPage = lazy(() => import('./pages/CropCalendarPage').then((m) => ({ default: m.CropCalendarPage })))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -40,6 +41,7 @@ function AnimatedRoutes() {
         <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
         <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
         <Route path="/yield-prediction" element={<PageTransition><YieldPredictionPage /></PageTransition>} />
+        <Route path="/crop-calendar" element={<PageTransition><CropCalendarPage /></PageTransition>} />
         <Route path="*" element={<PageTransition><HomePage /></PageTransition>} />
       </Routes>
     </AnimatePresence>

@@ -82,8 +82,9 @@ const features = [
     icon: CalendarCheck,
     title: 'Crop Calendar',
     desc: 'Smart sowing-to-harvest schedules generated for your crop, soil and region.',
-    color: '#F38BBC',
-    gradient: 'from-blush-500/25 to-transparent',
+    color: '#FFF2A6',
+    gradient: 'from-butter/25 to-transparent',
+    to: '/crop-calendar',
   },
   {
     icon: Sprout,
