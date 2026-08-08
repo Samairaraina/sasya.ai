@@ -7,7 +7,7 @@ import {
 import { SectionHeading, Reveal, EASE } from '../../lib/animations'
 
 import {
-  WEATHER_KEY, OPENAI_KEY,
+  WEATHER_KEY,
   CurrentWeather, ForecastDay,
   fetchCurrent, fetchForecast,
   generateAIAdvice, getBestSprayWindow
