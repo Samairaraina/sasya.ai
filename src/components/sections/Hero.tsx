@@ -34,7 +34,7 @@ function ImageSlideshow() {
 
   return (
     <motion.div
-      className="relative aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-[2rem] border border-white/15 bg-forest-900 shadow-card"
+      className="relative aspect-[3/4] w-[280px] overflow-hidden rounded-[2rem] border border-white/15 bg-forest-900 shadow-card"
       animate={{ y: [0, -10, 0] }}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
     >
