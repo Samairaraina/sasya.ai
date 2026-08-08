@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, ImagePlus, Mic, Send, Sparkles, X } from 'lucide-react'
+import { MessageCircle, ImagePlus, Mic, Send, Sparkles, X } from 'lucide-react'
 import { EASE } from '../../lib/animations'
 import { geminiChat, hasGeminiKey } from '../../lib/gemini'
 
@@ -149,7 +149,7 @@ export function ChatWidget() {
             transition={{ duration: 0.25 }}
             className="grid place-items-center"
           >
-            {open ? <X size={22} /> : <Bot size={24} />}
+            {open ? <X size={22} /> : <MessageCircle size={24} />}
           </motion.span>
         </AnimatePresence>
         {!open && (
@@ -170,7 +170,7 @@ export function ChatWidget() {
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-white/10 bg-white/[0.04] px-5 py-4">
               <span className="relative grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blush-500 to-blush-400">
-                <Bot size={20} className="text-forest-950" />
+                <MessageCircle size={20} className="text-forest-950" />
                 <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-forest-950 bg-emerald-400" />
               </span>
               <div>
