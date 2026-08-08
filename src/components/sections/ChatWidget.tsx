@@ -178,7 +178,7 @@ export function ChatWidget() {
                   Sasya AI <Sparkles size={12} className="text-blush-400" />
                 </p>
                 <p className="text-[11px] text-emerald-300">
-                  {live ? 'Online · live Gemini AI' : 'Online · replies instantly'}
+                  {live ? 'Online · live Groq AI' : 'Online · replies instantly'}
                 </p>
               </div>
             </div>

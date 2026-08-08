@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion'
 import {
   CloudSun,
   Droplets,
@@ -14,104 +14,47 @@ import { Button } from '../ui/MagneticButton'
 import { Logo } from '../ui/Logo'
 import { EASE, staggerContainer, staggerItem } from '../../lib/animations'
 
-function PhoneMockup() {
+const slideImages = [
+  '/slideshow/slide1.jpg',
+  '/slideshow/slide2.jpg',
+  '/slideshow/slide3.jpg',
+  '/slideshow/slide4.jpg',
+  '/slideshow/slide5.png',
+]
+
+function ImageSlideshow() {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % slideImages.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <motion.div
-      className="relative aspect-[9/18] w-full max-w-[250px] rounded-[2.6rem] border border-white/15 bg-gradient-to-b from-forest-800 to-forest-950 p-2 shadow-card"
+      className="relative aspect-[3/4] w-full max-w-[280px] overflow-hidden rounded-[2rem] border border-white/15 bg-forest-900 shadow-card"
       animate={{ y: [0, -10, 0] }}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-forest-900">
-        {/* Status bar */}
-        <div className="flex items-center justify-between px-5 pt-4 text-[9px] text-white/60">
-          <span>9:41</span>
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-        </div>
-
-        {/* App header */}
-        <div className="mt-2 flex items-center justify-between px-5">
-          <div>
-            <p className="text-[10px] text-white/50">Crop Scan</p>
-            <p className="text-sm font-semibold">Tomato Field A</p>
-          </div>
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10">
-            <Sparkles size={13} className="text-blush-400" />
-          </span>
-        </div>
-
-        {/* Scan area */}
-        <div className="mx-4 mt-4">
-          <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/25 via-forest-700 to-blush-500/20">
-            <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
-              <path
-                d="M50 8 C20 20 12 44 30 62 C18 60 10 48 14 36 C24 30 40 26 50 8 Z"
-                fill="#3DDC97"
-                opacity="0.55"
-              />
-              <path
-                d="M50 8 C80 20 88 44 70 62 C82 60 90 48 86 36 C76 30 60 26 50 8 Z"
-                fill="#F38BBC"
-                opacity="0.5"
-              />
-              <path d="M50 12 C42 34 42 52 50 70" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-              <path d="M50 30 C36 38 30 46 30 58" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
-              <path d="M50 30 C64 38 70 46 70 58" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.7" />
-            </svg>
-            {/* Scan corners */}
-            <div className="absolute left-3 top-3 h-6 w-6 rounded-tl-lg border-l-2 border-t-2 border-emerald-300" />
-            <div className="absolute right-3 top-3 h-6 w-6 rounded-tr-lg border-r-2 border-t-2 border-emerald-300" />
-            <div className="absolute bottom-3 left-3 h-6 w-6 rounded-bl-lg border-b-2 border-l-2 border-emerald-300" />
-            <div className="absolute bottom-3 right-3 h-6 w-6 rounded-br-lg border-b-2 border-r-2 border-emerald-300" />
-            {/* Scan pulse */}
-            <div className="absolute inset-x-6 overflow-hidden rounded-2xl">
-              <motion.div
-                className="absolute left-1/2 top-0 h-full w-1 rounded-full bg-gradient-to-b from-transparent via-blush-400 to-transparent shadow-glow"
-                animate={{ x: ['45%', '55%', '45%'] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.div
-                className="absolute inset-x-0 top-[15%] h-0.5 rounded-full bg-white/10"
-                animate={{ opacity: [0.4, 0.05, 0.4] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.div
-                className="absolute inset-x-0 top-[55%] h-0.5 rounded-full bg-white/10"
-                animate={{ opacity: [0.05, 0.45, 0.05] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Result chip */}
-        <div className="mx-4 mt-3 rounded-xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-white/50">Detected</p>
-              <p className="text-xs font-semibold">Early Blight</p>
-            </div>
-            <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[9px] font-semibold text-emerald-300">
-              96.4%
-            </span>
-          </div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-blush-400"
-              initial={{ width: 0 }}
-              animate={{ width: '96.4%' }}
-              transition={{ duration: 1.6, delay: 0.6, ease: EASE }}
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
-          <div className="flex items-center justify-center gap-1.5 rounded-xl bg-blush-500/90 py-2 text-[10px] font-semibold text-forest-950">
-            <Leaf size={11} /> Treatment
-          </div>
-          <div className="flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.05] py-2 text-[10px] font-semibold">
-            <ScanLine size={11} /> Full Report
-          </div>
+      <AnimatePresence mode="wait">
+        <motion.img
+          key={index}
+          src={slideImages[index]}
+          alt="Sasya farming"
+          className="absolute inset-0 h-full w-full object-cover"
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8, ease: EASE }}
+        />
+      </AnimatePresence>
+      <div className="absolute inset-0 bg-gradient-to-t from-forest-950/80 via-transparent to-transparent" />
+      <div className="absolute bottom-6 left-6 right-6">
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md w-max">
+          <Sparkles size={14} className="text-emerald-300" />
+          <span className="text-xs font-medium text-white shadow-sm">AI Enhanced</span>
         </div>
       </div>
     </motion.div>
@@ -330,7 +273,7 @@ export function Hero() {
                   times: [0, 0.25, 0.5, 0.75, 1],
                 }}
               >
-                <PhoneMockup />
+                <ImageSlideshow />
                 {floatingCards.map((c) => (
                   <FloatingCard key={c.label} {...c} />
                 ))}

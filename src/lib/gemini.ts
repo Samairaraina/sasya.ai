@@ -1,11 +1,11 @@
-// AI service — uses Google Gemini 1.5 Flash for vision (disease detection), chat, and insights.
+// AI service — migrated to use Groq API (OpenAI compatible)
 // Keeps the same exported function signatures so no other file needs changing.
 
-const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY as string
-const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`
+const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY as string
+const BASE_URL = `https://api.groq.com/openai/v1/chat/completions`
 
 export function hasGeminiKey(): boolean {
-  return Boolean(GEMINI_KEY)
+  return Boolean(GROQ_KEY)
 }
 
 // ─── Text chat ────────────────────────────────────────────────────────
@@ -14,83 +14,64 @@ export async function geminiChat(
 ): Promise<string> {
   const res = await fetch(BASE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
     body: JSON.stringify({
-      contents: messages.map((m) => ({
-        role: m.role,
-        parts: [{ text: m.text }],
+      model: 'llama-3.1-8b-instant',
+      messages: messages.map((m) => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.text,
       })),
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-      },
+      temperature: 0.7,
+      max_tokens: 1024,
     }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Gemini chat error ${res.status}: ${err}`)
+    throw new Error(`Groq chat error ${res.status}: ${err}`)
   }
 
   const json = await res.json()
-  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  return json.choices?.[0]?.message?.content ?? ''
 }
 
 // ─── Vision / Disease Detection ───────────────────────────────────────
 export async function geminiVision(imageDataUrl: string, prompt: string): Promise<string> {
   // imageDataUrl is usually "data:image/jpeg;base64,....."
-  // Extract mime_type and base64 string
-  let mimeType = 'image/jpeg'
-  let base64Data = imageDataUrl
-
-  if (imageDataUrl.startsWith('data:')) {
-    const parts = imageDataUrl.split(',')
-    if (parts.length === 2) {
-      mimeType = parts[0].replace('data:', '').split(';')[0]
-      base64Data = parts[1]
-    }
-  }
-
-  // Gemini vision does not support SVG. If we receive SVG (like the DEMO_LEAF), we will just send the text prompt 
-  // or throw an error. But actually DEMO_LEAF isn't base64, it's URL encoded!
-  // Wait, the UI only calls start() with DEMO_LEAF if we use the camera button. We fixed that earlier to trigger `!dataUrl` internally. 
-  // Let's ensure SVG is stripped or rejected gracefully if it somehow gets here.
-  if (mimeType.includes('svg')) {
-    // If it's an SVG (like the fallback camera), just send a blank prompt or simulate failure to use demo data
-    throw new Error("SVG format not supported by Gemini Vision API")
+  if (imageDataUrl.includes('image/svg')) {
+    // If it's an SVG (like the fallback camera), just simulate failure to use demo data
+    throw new Error("SVG format not supported by Groq Vision API")
   }
 
   const res = await fetch(BASE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
     body: JSON.stringify({
-      contents: [
+      model: 'llama-3.2-11b-vision-preview',
+      messages: [
         {
-          parts: [
-            { text: prompt },
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
             {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64Data,
-              },
-            },
-          ],
-        },
+              type: 'image_url',
+              image_url: { url: imageDataUrl }
+            }
+          ]
+        }
       ],
-      generationConfig: {
-        temperature: 0.1, // Low = precise, consistent disease identification
-        maxOutputTokens: 2048,
-      },
+      temperature: 0.1, // Low = precise, consistent disease identification
+      max_tokens: 2048,
     }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Gemini vision error ${res.status}: ${err}`)
+    throw new Error(`Groq vision error ${res.status}: ${err}`)
   }
 
   const json = await res.json()
-  return json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  return json.choices?.[0]?.message?.content ?? ''
 }
 
 // ─── JSON extractor ───────────────────────────────────────────────────
@@ -99,9 +80,18 @@ export function extractJson<T>(text: string): T | null {
   const candidate = fenced ? fenced[1] : text
   const start = candidate.indexOf('{')
   const end = candidate.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) return null
+  const arrStart = candidate.indexOf('[')
+  const arrEnd = candidate.lastIndexOf(']')
+  
+  let jsonStr = candidate;
+  if (start !== -1 && end !== -1 && end > start && (arrStart === -1 || start < arrStart)) {
+    jsonStr = candidate.slice(start, end + 1)
+  } else if (arrStart !== -1 && arrEnd !== -1 && arrEnd > arrStart) {
+    jsonStr = candidate.slice(arrStart, arrEnd + 1)
+  }
+
   try {
-    return JSON.parse(candidate.slice(start, end + 1)) as T
+    return JSON.parse(jsonStr) as T
   } catch {
     return null
   }
@@ -133,33 +123,30 @@ REQUIREMENTS:
 3. soil: Plausible soil health metrics. { moisture: string (e.g., "68%"), temp: string (e.g., "28°C"), nitrogen: string (Low/Medium/Good), phosphorus: string (Low/Medium/Good), potassium: string (Low/Medium/Good), ph: string (e.g., "6.7") }
 
 OUTPUT FORMAT:
-Return ONLY valid JSON wrapped in a codeblock matching this interface exactly. Do not include markdown formatting outside the codeblock.
-\`\`\`json
+Return ONLY valid JSON matching this interface exactly. Do not include markdown formatting.
 {
   "advice": ["...", "...", "..."],
   "yield": { "amount": "...", "confidence": 90, "revenue": "..." },
   "soil": { "moisture": "...", "temp": "...", "nitrogen": "...", "phosphorus": "...", "potassium": "...", "ph": "..." }
 }
-\`\`\`
 `
 
   try {
     const res = await fetch(BASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.5,
-          responseMimeType: 'application/json',
-        },
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.5,
+        response_format: { type: 'json_object' }
       }),
     })
 
     if (!res.ok) throw new Error('API Error')
     const json = await res.json()
-    const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    return extractJson(content) || JSON.parse(content) // fallback to direct parse if response_mime_type worked well
+    const content = json.choices?.[0]?.message?.content ?? ''
+    return extractJson(content) || JSON.parse(content) 
   } catch (err) {
     console.error('Insight generation failed:', err)
     return null
@@ -194,7 +181,7 @@ Farms: ${JSON.stringify(farms)}
 Active Crops: ${JSON.stringify(crops)}
 
 REQUIREMENTS:
-Return a JSON array of objects, with each object strictly matching this interface:
+Return a JSON array of objects wrapped in a "predictions" key, with each object strictly matching this interface:
 {
   "cropId": "string (the exact id from the provided crop)",
   "cropName": "string",
@@ -207,32 +194,32 @@ Return a JSON array of objects, with each object strictly matching this interfac
 }
 
 OUTPUT FORMAT:
-Return ONLY valid JSON wrapped in a codeblock.
-\`\`\`json
-[
-  { ... }
-]
-\`\`\`
+Return ONLY valid JSON matching this format exactly, with no extra markdown.
+{
+  "predictions": [
+    { ... }
+  ]
+}
 `
 
   try {
     const res = await fetch(BASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.4,
-          responseMimeType: 'application/json',
-        },
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        response_format: { type: 'json_object' }
       }),
     })
 
     if (!res.ok) throw new Error('API Error')
     const json = await res.json()
-    const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const content = json.choices?.[0]?.message?.content ?? ''
     
-    return extractJson<YieldPrediction[]>(content) || JSON.parse(content) || []
+    const parsed = extractJson<{predictions: YieldPrediction[]}>(content) || JSON.parse(content)
+    return parsed.predictions || [];
   } catch (err) {
     console.error('Yield prediction generation failed:', err)
     return []

@@ -123,7 +123,7 @@ export function Scanner() {
 
     if (!hasGeminiKey()) {
       setTimeout(() => {
-        setAiError('VITE_GEMINI_API_KEY not set — showing demo data')
+        setAiError('VITE_GROQ_API_KEY not set — showing demo data')
         setStage('done')
       }, 3000)
       return
@@ -423,7 +423,7 @@ export function Scanner() {
                         </span>
                         {liveResult && (
                           <span className="rounded-full bg-white/[0.06] px-3 py-1 text-[11px] font-semibold text-white/60">
-                            Gemini live ✓
+                            Groq live ✓
                           </span>
                         )}
                       </div>

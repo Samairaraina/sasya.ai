@@ -1,5 +1,5 @@
 export const WEATHER_KEY = import.meta.env.VITE_WEATHER_API_KEY as string
-export const OPENAI_KEY  = import.meta.env.VITE_OPENAI_API_KEY as string
+export const GROQ_KEY    = import.meta.env.VITE_GROQ_API_KEY as string
 export const OWM         = 'https://api.openweathermap.org/data/2.5'
 
 export interface CurrentWeather {
@@ -86,7 +86,7 @@ export async function fetchForecast(lat: number, lon: number): Promise<ForecastD
 }
 
 export async function generateAIAdvice(weather: CurrentWeather, forecast: ForecastDay[]): Promise<string> {
-  if (!OPENAI_KEY) return 'Add VITE_OPENAI_API_KEY to get AI farming advice.'
+  if (!GROQ_KEY) return 'Add VITE_GROQ_API_KEY to get AI farming advice.'
 
   const prompt = `You are an expert agronomist advising Indian farmers.
 Current weather in ${weather.city}: ${weather.temp}°C, ${weather.description}, humidity ${weather.humidity}%, wind ${weather.windSpeed} km/h.
@@ -95,11 +95,11 @@ Current weather in ${weather.city}: ${weather.temp}°C, ${weather.description}, 
 Give 2-3 sentences of practical farming advice covering: best day to sow/spray, irrigation timing, and any disease risk warnings based on humidity/rain. Be specific and concise. No bullet points.`
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5,
         max_tokens: 150,
